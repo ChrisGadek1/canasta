@@ -13,9 +13,17 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    card.cpp \
+    player.cpp \
+    game.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    card.h \
+    player.h \
+    game.h \
+    cardsuit.h \
+    cardvalue.h
 
 FORMS    += mainwindow.ui
 
