@@ -7,10 +7,6 @@
 
 int main(int argc, char *argv[])
 {
-    Player player = Player(true, "name");
-    Card card = Card(CardValue::JACK, CardSuit::SPADES, player);
-    qDebug() << QString::fromStdString(card.texturePath());
-
     QApplication a(argc, argv);
 
     MainWindow w;

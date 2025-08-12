@@ -4,26 +4,31 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui \
+            opengl
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = canasta
 TEMPLATE = app
 
+LIBS += -lopengl32
+
 
 SOURCES += main.cpp\
         mainwindow.cpp \
     card.cpp \
     player.cpp \
-    game.cpp
+    game.cpp \
+    mainglwidget.cpp
 
 HEADERS  += mainwindow.h \
     card.h \
     player.h \
     game.h \
     cardsuit.h \
-    cardvalue.h
+    cardvalue.h \
+    mainglwidget.h
 
 FORMS    += mainwindow.ui
 
