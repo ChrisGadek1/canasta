@@ -9,12 +9,11 @@
 
 class Card
 {
-    CardValue value;
-    CardSuit suit;
-    Player player;
     GLuint textureId;
 public:
-    Card(CardValue value, CardSuit suit, Player player): value(value), suit(suit), player(player), textureId(0) {}
+    CardValue value;
+    CardSuit suit;
+    Card(CardValue value, CardSuit suit): textureId(0), value(value), suit(suit) {}
     ~Card() {
         glDeleteTextures(1, &textureId);
     }

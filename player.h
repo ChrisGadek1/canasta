@@ -7,8 +7,12 @@ class Player
 {
     bool isHumanControlled;
     std::string name;
+    int number;
 public:
-    Player(bool isHumanControlled, std::string name): isHumanControlled(isHumanControlled), name(name) {}
+    Player(bool isHumanControlled, std::string name, int number): isHumanControlled(isHumanControlled), name(name), number(number) {}
+    Player(): isHumanControlled(false), name("<placeholder>"), number(-1) {}
+    std::string getName();
+    int getNumber();
 };
 
 #endif // PLAYER_H

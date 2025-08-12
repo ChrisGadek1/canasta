@@ -5,13 +5,12 @@
 #include <QImage>
 #include "card.h"
 #include <vector>
+#include "game.h"
 
 class MainGLWidget : public QGLWidget
 {
     Q_OBJECT
-
 public:
-
     explicit MainGLWidget(QWidget *parent = nullptr);
     ~MainGLWidget();
 
@@ -21,9 +20,9 @@ protected:
     void paintGL() override;
 
 private:
+    Game game;
     GLuint textureId;
     QImage loadTexture(const QString &path);
-    std::vector<Card> cards;
 };
 
 #endif // MAINGLWIDGET_H

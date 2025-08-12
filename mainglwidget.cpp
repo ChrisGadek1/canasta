@@ -5,6 +5,7 @@
 #include "card.h"
 #include "player.h"
 #include <vector>
+#include "game.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -13,8 +14,9 @@
 
 
 MainGLWidget::MainGLWidget(QWidget *parent)
-    : QGLWidget(parent), textureId(0)
+    : QGLWidget(parent), game(), textureId(0)
 {
+    this->game.initialize();
 }
 
 MainGLWidget::~MainGLWidget()
@@ -53,19 +55,10 @@ void MainGLWidget::initializeGL()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
 
-    Player player(true, "name");
-
-    std::vector<Card> cards;
-
-    Card c1(CardValue::ACE, CardSuit::SPADES, player);
-    Card c2(CardValue::TEN, CardSuit::HEARTS, player);
-    cards.push_back(c1);
-    cards.push_back(c2);
-
-    this->cards = cards;
-
-    for (auto &card : this->cards) {
-        card.loadTexture();
+    for(auto &deck : this->game.getDecks()) {
+        for(auto &card : deck.getCards()) {
+            card.loadTexture();
+        }
     }
 }
 
@@ -95,9 +88,5 @@ void MainGLWidget::paintGL()
         glEnd();
     }
 
-    float x = -0.8f;
-    for (const auto &card : cards) {
-        card.draw(x, -0.5f, 0.4f, 0.6f);
-        x += 0.45f;
-    }
+    this->game.getDecks()[0].getCards()[0].draw(-0.8f, -0.5f, 0.4f, 0.6f);
 }

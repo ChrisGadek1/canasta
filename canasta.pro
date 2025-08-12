@@ -20,7 +20,8 @@ SOURCES += main.cpp\
     card.cpp \
     player.cpp \
     game.cpp \
-    mainglwidget.cpp
+    mainglwidget.cpp \
+    cardsdeck.cpp
 
 HEADERS  += mainwindow.h \
     card.h \
@@ -28,7 +29,9 @@ HEADERS  += mainwindow.h \
     game.h \
     cardsuit.h \
     cardvalue.h \
-    mainglwidget.h
+    mainglwidget.h \
+    cardsdeck.h \
+    cardsdecktype.h
 
 FORMS    += mainwindow.ui
 
