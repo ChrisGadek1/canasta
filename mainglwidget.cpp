@@ -60,6 +60,7 @@ void MainGLWidget::initializeGL()
             card.loadTexture();
         }
     }
+    Card::loadReverseTexture();
 }
 
 void MainGLWidget::resizeGL(int w, int h)
@@ -67,10 +68,11 @@ void MainGLWidget::resizeGL(int w, int h)
     glViewport(0, 0, w, h);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(-1, 1, -1, 1, -1, 1); // ortograficzna projekcja z NDC
+    glOrtho(-1, 1, -1, 1, -1, 1);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 }
+
 
 void MainGLWidget::paintGL()
 {
@@ -81,12 +83,32 @@ void MainGLWidget::paintGL()
         glBindTexture(GL_TEXTURE_2D, textureId);
 
         glBegin(GL_QUADS);
-            glTexCoord2f(0, 0); glVertex2f(-1.0f, -1.0f);
-            glTexCoord2f(1, 0); glVertex2f(1.0f, -1.0f);
-            glTexCoord2f(1, 1); glVertex2f(1.0f, 1.0f);
-            glTexCoord2f(0, 1); glVertex2f(-1.0f, 1.0f);
+            glTexCoord2f(0, 0); glVertex2f(-1, -1);
+            glTexCoord2f(1, 0); glVertex2f(1, -1);
+            glTexCoord2f(1, 1); glVertex2f(1, 1);
+            glTexCoord2f(0, 1); glVertex2f(-1, 1);
         glEnd();
     }
-
-    this->game.getDecks()[0].getCards()[0].draw(-0.8f, -0.5f, 0.4f, 0.6f);
+    for(auto &deck: this->game.getDecks()) {
+        if(deck.getType() == PLAYERS_OWNED) {
+            for(auto &card: deck.getCards()) {
+                int angle;
+                switch(deck.getPlayer().getNumber()) {
+                    case 0:
+                        angle = 0;
+                        break;
+                    case 1:
+                        angle = 270;
+                        break;
+                    case 2:
+                        angle = 180;
+                        break;
+                    default:
+                        angle = 90;
+                        break;
+                }
+                card.draw(!deck.getPlayer().getIsHumanControlled(), angle);
+            }
+        }
+    }
 }

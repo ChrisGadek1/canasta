@@ -15,6 +15,7 @@ public:
     Game(std::vector<Player> players, std::vector<CardsDeck> decks): players(players), decks(decks) {}
     Game() {}
     void initialize();
+    void initializeCardsPositions();
     std::vector<CardsDeck>& getDecks();
     std::vector<Player>& getPlayers();
 };

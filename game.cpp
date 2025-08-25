@@ -21,6 +21,7 @@ std::vector<CardsDeck>& Game::getDecks() {
 void Game::initialize() {
     this->generatePlayers();
     this->generateDecks();
+    this->initializeCardsPositions();
 }
 
 void Game::generatePlayers() {
@@ -89,3 +90,85 @@ void Game::generateDecks() {
     decks.push_back(hiddenDeck);
     this->decks = decks;
 }
+
+void Game::initializeCardsPositions() {
+    float margin = 0.4f;
+    float cardHeight = 0.3f;
+    for (unsigned short deckI = 0; deckI < this->decks.size(); deckI++) {
+        if (this->decks[deckI].getType() == PLAYERS_OWNED) {
+            auto &cards = this->decks[deckI].getCards();
+            int n = cards.size();
+            if (n == 0) continue;
+
+            int playerNum = this->decks[deckI].getPlayer().getNumber();
+
+            if (playerNum == 0) {
+                // dół
+                float startingX = - (1 - margin);
+                float endX = (1 - margin);
+                float bottomY = - 0.9f;
+                float topY = - 0.9f + cardHeight;
+                float cardWidth = (topY - bottomY) * Card::ratio;
+                float offsetX = (endX - startingX - cardWidth) / std::max(1, n - 1);
+
+                for (int cardI = 0; cardI < n; cardI++) {
+                    cards[cardI].position.setLeft(startingX);
+                    cards[cardI].position.setRight(startingX + cardWidth);
+                    cards[cardI].position.setTop(topY);
+                    cards[cardI].position.setDown(bottomY);
+                    startingX += offsetX;
+                }
+            }
+            else if (playerNum == 2) {
+                // góra
+                float startingX = - (1 - margin);
+                float endX = (1 - margin);
+                float topY = 0.9f;
+                float bottomY = 0.9f - cardHeight;
+                float cardWidth = (topY - bottomY) * Card::ratio;
+                float offsetX = (endX - startingX - cardWidth) / std::max(1, n - 1);
+
+                for (int cardI = 0; cardI < n; cardI++) {
+                    cards[cardI].position.setLeft(startingX);
+                    cards[cardI].position.setRight(startingX + cardWidth);
+                    cards[cardI].position.setTop(topY);
+                    cards[cardI].position.setDown(bottomY);
+                    startingX += offsetX;
+                }
+            }
+            else if (playerNum == 1) {
+                // lewo (układ pionowy)
+                float leftX = -0.9f;
+                float rightX = leftX + cardHeight * Card::ratio;
+                float startingY = -(1 - margin);
+                float endY = (1 - margin);
+                float offsetY = (endY - startingY - cardHeight) / std::max(1, n - 1);
+
+                for (int cardI = 0; cardI < n; cardI++) {
+                    cards[cardI].position.setLeft(leftX);
+                    cards[cardI].position.setRight(rightX);
+                    cards[cardI].position.setDown(startingY);
+                    cards[cardI].position.setTop(startingY + cardHeight);
+                    startingY += offsetY;
+                }
+            }
+            else if (playerNum == 3) {
+                // prawo (układ pionowy)
+                float rightX = 0.9f;
+                float leftX = rightX - cardHeight * Card::ratio;
+                float startingY = -(1 - margin);
+                float endY = (1 - margin);
+                float offsetY = (endY - startingY - cardHeight) / std::max(1, n - 1);
+
+                for (int cardI = 0; cardI < n; cardI++) {
+                    cards[cardI].position.setLeft(leftX);
+                    cards[cardI].position.setRight(rightX);
+                    cards[cardI].position.setDown(startingY);
+                    cards[cardI].position.setTop(startingY + cardHeight);
+                    startingY += offsetY;
+                }
+            }
+        }
+    }
+}
+

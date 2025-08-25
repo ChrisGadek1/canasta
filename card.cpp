@@ -10,6 +10,8 @@
 #endif
 #include <GL/gl.h>
 
+GLuint Card::reverseTextureId = 0;
+
 std::string Card::texturePath() const {
     std::string cardValueToInt;
     switch (value) {
@@ -65,12 +67,51 @@ void Card::loadTexture() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-void Card::draw(float x, float y, float w, float h) const {
-    glBindTexture(GL_TEXTURE_2D, textureId);
+void Card::draw(bool reverse, float angleDegrees) const
+{
+    GLuint tex = reverse ? Card::reverseTextureId : textureId;
+    if (!tex) return;
+    glBindTexture(GL_TEXTURE_2D, tex);
+
+    const float w  = position.right - position.left;
+    const float h  = position.top   - position.down;
+    const float cx = (position.left + position.right) / 2.0f;
+    const float cy = (position.down + position.top)   / 2.0f;
+
+    glPushMatrix();
+    glTranslatef(cx, cy, 0.0f);
+    glRotatef(angleDegrees, 0.0f, 0.0f, 1.0f);
+
+    const float hw = w * 0.5f;
+    const float hh = h * 0.5f;
+
     glBegin(GL_QUADS);
-        glTexCoord2f(0,0); glVertex2f(x,     y);
-        glTexCoord2f(1,0); glVertex2f(x + w, y);
-        glTexCoord2f(1,1); glVertex2f(x + w, y + h);
-        glTexCoord2f(0,1); glVertex2f(x,     y + h);
+        glTexCoord2f(0.f, 0.f); glVertex2f(-hw, -hh);
+        glTexCoord2f(1.f, 0.f); glVertex2f( hw, -hh);
+        glTexCoord2f(1.f, 1.f); glVertex2f( hw,  hh);
+        glTexCoord2f(0.f, 1.f); glVertex2f(-hw,  hh);
     glEnd();
+
+    glPopMatrix();
+}
+
+
+void Card::loadReverseTexture() {
+    QString path = QString(":/images/images/cards/card_reverse.png");
+    QImage img;
+    if (!img.load(path)) {
+        qDebug() << "Nie udało się wczytać tekstury:" << path;
+        return;
+    }
+
+    QImage glImg = QGLWidget::convertToGLFormat(img);
+
+    glGenTextures(1, &Card::reverseTextureId);
+    glBindTexture(GL_TEXTURE_2D, Card::reverseTextureId);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                 glImg.width(), glImg.height(),
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, glImg.bits());
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }

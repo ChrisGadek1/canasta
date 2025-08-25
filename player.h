@@ -2,6 +2,7 @@
 #define PLAYER_H
 
 #include <string>
+#include <array>
 
 class Player
 {
@@ -13,6 +14,7 @@ public:
     Player(): isHumanControlled(false), name("<placeholder>"), number(-1) {}
     std::string getName();
     int getNumber();
+    bool getIsHumanControlled();
 };
 
 #endif // PLAYER_H

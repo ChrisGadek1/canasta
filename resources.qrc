@@ -1,6 +1,7 @@
 <!DOCTYPE RCC><RCC version="1.0">
     <qresource prefix='/images'>
         <file>images/background.png</file>
+        <file>images/cards/card_reverse.png</file>
         <file>images/cards/10_of_clubs.png</file>
         <file>images/cards/10_of_diamonds.png</file>
         <file>images/cards/10_of_hearts.png</file>

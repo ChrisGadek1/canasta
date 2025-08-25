@@ -15,6 +15,8 @@ public:
     CardsDeck(CardsDeckType type, std::vector<Card> cards): type(type), cards(cards) {}
     void addCard(Card card);
     std::vector<Card>& getCards();
+    Player& getPlayer();
+    CardsDeckType& getType();
 };
 
 #endif // CARDSDECK_H

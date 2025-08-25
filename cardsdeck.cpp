@@ -8,3 +8,11 @@ void CardsDeck::addCard(Card card) {
 std::vector<Card>& CardsDeck::getCards() {
     return this->cards;
 }
+
+Player& CardsDeck::getPlayer() {
+    return this->player;
+}
+
+CardsDeckType& CardsDeck::getType() {
+    return this->type;
+}

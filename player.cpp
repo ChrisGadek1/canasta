@@ -9,3 +9,7 @@ std::string Player::getName() {
 int Player::getNumber() {
     return this->number;
 }
+
+bool Player::getIsHumanControlled() {
+    return this->isHumanControlled;
+}

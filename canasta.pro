@@ -31,7 +31,8 @@ HEADERS  += mainwindow.h \
     cardvalue.h \
     mainglwidget.h \
     cardsdeck.h \
-    cardsdecktype.h
+    cardsdecktype.h \
+    position.h
 
 FORMS    += mainwindow.ui
 
