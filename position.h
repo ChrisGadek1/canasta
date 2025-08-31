@@ -9,6 +9,7 @@ public:
     void setRight(float right) { this->right = right; }
     void setDown(float down) { this->down = down; }
     void setTop(float top) { this->top = top; }
+    static Position toPx(float left, float down, float top, float right, int vw, int wh);
 };
 
 #endif // POSITION_H

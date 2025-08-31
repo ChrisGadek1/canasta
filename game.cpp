@@ -137,34 +137,36 @@ void Game::initializeCardsPositions() {
                 }
             }
             else if (playerNum == 1) {
-                // lewo (układ pionowy)
+                // lewo (układ poziomy)
                 float leftX = -0.9f;
-                float rightX = leftX + cardHeight * Card::ratio;
+                float rightX = leftX + cardHeight;
                 float startingY = -(1 - margin);
                 float endY = (1 - margin);
-                float offsetY = (endY - startingY - cardHeight) / std::max(1, n - 1);
+                float cardWidth = (rightX - leftX) * Card::ratio;
+                float offsetY = (endY - startingY - cardWidth) / std::max(1, n - 1);
 
                 for (int cardI = 0; cardI < n; cardI++) {
                     cards[cardI].position.setLeft(leftX);
                     cards[cardI].position.setRight(rightX);
                     cards[cardI].position.setDown(startingY);
-                    cards[cardI].position.setTop(startingY + cardHeight);
+                    cards[cardI].position.setTop(startingY + cardWidth);
                     startingY += offsetY;
                 }
             }
             else if (playerNum == 3) {
-                // prawo (układ pionowy)
+                // prawo (układ poziomy)
                 float rightX = 0.9f;
-                float leftX = rightX - cardHeight * Card::ratio;
+                float leftX = rightX - cardHeight;
                 float startingY = -(1 - margin);
                 float endY = (1 - margin);
-                float offsetY = (endY - startingY - cardHeight) / std::max(1, n - 1);
+                float cardWidth = (rightX - leftX) * Card::ratio;
+                float offsetY = (endY - startingY - cardWidth) / std::max(1, n - 1);
 
                 for (int cardI = 0; cardI < n; cardI++) {
                     cards[cardI].position.setLeft(leftX);
                     cards[cardI].position.setRight(rightX);
                     cards[cardI].position.setDown(startingY);
-                    cards[cardI].position.setTop(startingY + cardHeight);
+                    cards[cardI].position.setTop(startingY + cardWidth);
                     startingY += offsetY;
                 }
             }

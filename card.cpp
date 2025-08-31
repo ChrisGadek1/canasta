@@ -9,6 +9,7 @@
 #include <windows.h>
 #endif
 #include <GL/gl.h>
+#include <stdlib.h>
 
 GLuint Card::reverseTextureId = 0;
 
@@ -69,31 +70,46 @@ void Card::loadTexture() {
 
 void Card::draw(bool reverse, float angleDegrees) const
 {
-    GLuint tex = reverse ? Card::reverseTextureId : textureId;
-    if (!tex) return;
-    glBindTexture(GL_TEXTURE_2D, tex);
+    GLuint texture = reverse ? Card::reverseTextureId : textureId;
+    if (!texture) return;
+    glBindTexture(GL_TEXTURE_2D, texture);
 
     const float w  = position.right - position.left;
     const float h  = position.top   - position.down;
-    const float cx = (position.left + position.right) / 2.0f;
-    const float cy = (position.down + position.top)   / 2.0f;
 
-    glPushMatrix();
-    glTranslatef(cx, cy, 0.0f);
-    glRotatef(angleDegrees, 0.0f, 0.0f, 1.0f);
+    float verts[4][2] = {
+        { position.left,  position.down },
+        { position.right, position.down },
+        { position.right, position.top  },
+        { position.left,  position.top  }
+    };
 
-    const float hw = w * 0.5f;
-    const float hh = h * 0.5f;
+    float tex[4][2] = {
+        {0.f, 0.f}, {1.f, 0.f}, {1.f, 1.f}, {0.f, 1.f}
+    };
+
+    float rad = angleDegrees * M_PI / 180.0f;
+    float c = cos(rad), s = sin(rad);
+
+    for (int i = 0; i < 4; i++) {
+        float u = tex[i][0] - 0.5f;
+        float v = tex[i][1] - 0.5f;
+
+        float u2 = c * u - s * v;
+        float v2 = s * u + c * v;
+
+        tex[i][0] = u2 + 0.5f;
+        tex[i][1] = v2 + 0.5f;
+    }
 
     glBegin(GL_QUADS);
-        glTexCoord2f(0.f, 0.f); glVertex2f(-hw, -hh);
-        glTexCoord2f(1.f, 0.f); glVertex2f( hw, -hh);
-        glTexCoord2f(1.f, 1.f); glVertex2f( hw,  hh);
-        glTexCoord2f(0.f, 1.f); glVertex2f(-hw,  hh);
+    for (int i = 0; i < 4; i++) {
+        glTexCoord2f(tex[i][0], tex[i][1]);
+        glVertex2f(verts[i][0], verts[i][1]);
+    }
     glEnd();
-
-    glPopMatrix();
 }
+
 
 
 void Card::loadReverseTexture() {

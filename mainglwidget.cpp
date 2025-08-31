@@ -73,6 +73,22 @@ void MainGLWidget::resizeGL(int w, int h)
     glLoadIdentity();
 }
 
+void MainGLWidget::mousePressEvent(QMouseEvent * event) {
+    for(auto &deck: this->game.getDecks()) {
+        if(deck.getType() == PLAYERS_OWNED) {
+            for(auto &card: deck.getCards()) {
+                int x = event->pos().x();
+                int y = event->pos().y();
+                Position cardPos = Position::toPx(card.position.left, card.position.down, card.position.top, card.position.right, width(), height());
+                if(cardPos.down > y && cardPos.top < y && cardPos.left < x && cardPos.right > x) {
+                    // TODO
+                }
+            }
+        }
+
+    }
+}
+
 
 void MainGLWidget::paintGL()
 {

@@ -21,7 +21,8 @@ SOURCES += main.cpp\
     player.cpp \
     game.cpp \
     mainglwidget.cpp \
-    cardsdeck.cpp
+    cardsdeck.cpp \
+    position.cpp
 
 HEADERS  += mainwindow.h \
     card.h \

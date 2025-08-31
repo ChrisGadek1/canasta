@@ -18,11 +18,13 @@ protected:
     void initializeGL() override;
     void resizeGL(int w, int h) override;
     void paintGL() override;
+    void mousePressEvent(QMouseEvent *event) override;
 
 private:
     Game game;
     GLuint textureId;
     QImage loadTexture(const QString &path);
+
 };
 
 #endif // MAINGLWIDGET_H
