@@ -61,6 +61,7 @@ void MainGLWidget::initializeGL()
         }
     }
     Card::loadReverseTexture();
+    setMouseTracking(true);
 }
 
 void MainGLWidget::resizeGL(int w, int h)
@@ -75,11 +76,11 @@ void MainGLWidget::resizeGL(int w, int h)
 
 void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     std::vector<Card*> foundCards;
+    int x = event->pos().x();
+    int y = event->pos().y();
     for(auto &deck: this->game.getDecks()) {
         if(deck.getType() == PLAYERS_OWNED) {
             for(auto &card: deck.getCards()) {
-                int x = event->pos().x();
-                int y = event->pos().y();
                 Position cardPos = Position::toPx(card.position.left, card.position.down, card.position.top, card.position.right, width(), height());
                 if(cardPos.down > y && cardPos.top < y && cardPos.left < x && cardPos.right > x) {
                     if(deck.getPlayer().getNumber() == 0) {
@@ -89,6 +90,7 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
             }
         }
     }
+
     if(foundCards.size() == 2) {
         if(foundCards[0] == foundCards[1]->above) {
             foundCards[0]->setChosen(0);
@@ -103,7 +105,96 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
         foundCards[0]->setChosen(0);
         update();
     }
+    Position buttonPos = Position::toPx(this->meldingButtonPosition.left, this->meldingButtonPosition.down, this->meldingButtonPosition.top, this->meldingButtonPosition.right, width(), height());
+    if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x) {
+        setMeldButtonColor(92.0f, 87.0f, 87.0f);
+        update();
+    }
+}
 
+#include <QFont>
+#include <QFontMetrics>
+#include <QString>
+
+void MainGLWidget::drawButton(Position position, std::string text) {
+    glDisable(GL_TEXTURE_2D);
+    glColor3f(this->meldButtonRcolor/255.0f, this->meldButtonGcolor/255.0f, this->meldButtonBcolor/255.0f);
+
+    glBegin(GL_QUADS);
+        glVertex2f(position.left,  position.down);
+        glVertex2f(position.right, position.down);
+        glVertex2f(position.right, position.top);
+        glVertex2f(position.left,  position.top);
+    glEnd();
+
+    glColor3f(0.f, 0.f, 0.f);
+    glBegin(GL_LINE_LOOP);
+        glVertex2f(position.left,  position.down);
+        glVertex2f(position.right, position.down);
+        glVertex2f(position.right, position.top);
+        glVertex2f(position.left,  position.top);
+    glEnd();
+
+    glEnable(GL_TEXTURE_2D);
+    glColor3f(1.f, 1.f, 1.f);
+
+    float centerX = (position.left + position.right) / 2.0f;
+    float centerY = (position.down + position.top) / 2.0f;
+
+    int px = static_cast<int>( (centerX + 1.0f) * width()  * 0.5f );
+    int py = static_cast<int>( (1.0f - centerY) * height() * 0.5f );
+
+    QFont font("Arial", 14, QFont::Bold);
+    QFontMetrics fm(font);
+
+    QString qs = QString::fromStdString(text);
+    int textWidth  = fm.width(qs);
+
+    int ascent  = fm.ascent();
+    int descent = fm.descent();
+    int baseline = static_cast<int>(py + (ascent - descent) * 0.5f);
+
+    int tx = px - textWidth / 2;
+    int ty = baseline;
+
+    renderText(tx, ty, qs, font);
+}
+
+void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
+    int x = eventMove->pos().x();
+    int y = eventMove->pos().y();
+    Position buttonPos = Position::toPx(this->meldingButtonPosition.left, this->meldingButtonPosition.down, this->meldingButtonPosition.top, this->meldingButtonPosition.right, width(), height());
+    if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x) {
+        QApplication::setOverrideCursor(Qt::PointingHandCursor);
+        setMeldButtonColor(97.0f, 78.0f, 78.0f);
+        update();
+    }
+    else {
+        QApplication::setOverrideCursor(Qt::ArrowCursor);
+        setMeldButtonColor(82.0f, 57.0f, 55.0f);
+        update();
+    }
+}
+
+void MainGLWidget::mouseReleaseEvent(QMouseEvent *eventMove) {
+    int x = eventMove->pos().x();
+    int y = eventMove->pos().y();
+    Position buttonPos = Position::toPx(this->meldingButtonPosition.left, this->meldingButtonPosition.down, this->meldingButtonPosition.top, this->meldingButtonPosition.right, width(), height());
+    if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x) {
+        QApplication::setOverrideCursor(Qt::PointingHandCursor);
+        setMeldButtonColor(97.0f, 78.0f, 78.0f);
+        update();
+    }
+    else {
+        setMeldButtonColor(82.0f, 57.0f, 55.0f);
+        update();
+    }
+}
+
+void MainGLWidget::setMeldButtonColor(float r, float g, float b) {
+    this->meldButtonRcolor = r;
+    this->meldButtonGcolor = g;
+    this->meldButtonBcolor = b;
 }
 
 
@@ -144,4 +235,5 @@ void MainGLWidget::paintGL()
             }
         }
     }
+    drawButton(this->meldingButtonPosition, "Melduj");
 }
