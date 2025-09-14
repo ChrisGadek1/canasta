@@ -74,6 +74,7 @@ void MainGLWidget::resizeGL(int w, int h)
 }
 
 void MainGLWidget::mousePressEvent(QMouseEvent * event) {
+    std::vector<Card*> foundCards;
     for(auto &deck: this->game.getDecks()) {
         if(deck.getType() == PLAYERS_OWNED) {
             for(auto &card: deck.getCards()) {
@@ -81,12 +82,28 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
                 int y = event->pos().y();
                 Position cardPos = Position::toPx(card.position.left, card.position.down, card.position.top, card.position.right, width(), height());
                 if(cardPos.down > y && cardPos.top < y && cardPos.left < x && cardPos.right > x) {
-                    // TODO
+                    if(deck.getPlayer().getNumber() == 0) {
+                        foundCards.push_back(&card);
+                    }
                 }
             }
         }
-
     }
+    if(foundCards.size() == 2) {
+        if(foundCards[0] == foundCards[1]->above) {
+            foundCards[0]->setChosen(0);
+            update();
+        }
+        else {
+            foundCards[1]->setChosen(0);
+            update();
+        }
+    }
+    else if(foundCards.size() == 1) {
+        foundCards[0]->setChosen(0);
+        update();
+    }
+
 }
 
 

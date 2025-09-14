@@ -74,9 +74,6 @@ void Card::draw(bool reverse, float angleDegrees) const
     if (!texture) return;
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    const float w  = position.right - position.left;
-    const float h  = position.top   - position.down;
-
     float verts[4][2] = {
         { position.left,  position.down },
         { position.right, position.down },
@@ -130,4 +127,25 @@ void Card::loadReverseTexture() {
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+
+bool Card::isChosen() {
+    return this->chosen;
+}
+
+void Card::setChosen(int playerNumber) {
+    if(playerNumber == 0) {
+        Position cardPos = this->position;
+        if(this->chosen) {
+            cardPos.down += 0.06;
+            cardPos.top += 0.06;
+            this->chosen = false;
+        }
+        else {
+            cardPos.down -= 0.06;
+            cardPos.top -= 0.06;
+            this->chosen = true;
+        }
+        this->position = cardPos;
+    }
 }

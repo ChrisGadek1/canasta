@@ -117,6 +117,16 @@ void Game::initializeCardsPositions() {
                     cards[cardI].position.setTop(topY);
                     cards[cardI].position.setDown(bottomY);
                     startingX += offsetX;
+                    if(cardI == 0) {
+                        cards[cardI].above = &cards[cardI + 1];
+                    }
+                    else if(cardI > 0 && cardI < n - 1) {
+                        cards[cardI].above = &cards[cardI + 1];
+                        cards[cardI].behind = &cards[cardI - 1];
+                    }
+                    else {
+                        cards[cardI].behind = &cards[cardI - 1];
+                    }
                 }
             }
             else if (playerNum == 2) {
