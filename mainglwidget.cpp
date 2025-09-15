@@ -74,6 +74,35 @@ void MainGLWidget::resizeGL(int w, int h)
     glLoadIdentity();
 }
 
+void  MainGLWidget::clickOnMeldButton() {
+    std::vector<Card*> chosenCards;
+    for(auto &deck: this->game.getDecks()) {
+        if(deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() == 0) {
+            for(auto &card: deck.getCards()) {
+                if(card.isChosen()) {
+                    chosenCards.push_back(&card);
+                }
+            }
+        }
+    }
+    Player* currentPlayer = nullptr;
+    for(auto &player: this->game.getPlayers()){
+        if(player.getNumber() == 0) {
+            currentPlayer = &player;
+        }
+    }
+    if(chosenCards.size() > 0) {
+        Meld meld(chosenCards[0]->value, *currentPlayer);
+        for(Card* card: chosenCards) {
+            meld.addCard(card);
+        }
+        this->game.addMeld(meld);
+        this->game.initializeMeldCardPositions(&meld);
+        update();
+    }
+
+}
+
 void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     std::vector<Card*> foundCards;
     int x = event->pos().x();
@@ -109,6 +138,7 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x) {
         setMeldButtonColor(92.0f, 87.0f, 87.0f);
         update();
+        clickOnMeldButton();
     }
 }
 

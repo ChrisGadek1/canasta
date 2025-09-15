@@ -22,7 +22,8 @@ SOURCES += main.cpp\
     game.cpp \
     mainglwidget.cpp \
     cardsdeck.cpp \
-    position.cpp
+    position.cpp \
+    meld.cpp
 
 HEADERS  += mainwindow.h \
     card.h \
@@ -33,7 +34,8 @@ HEADERS  += mainwindow.h \
     mainglwidget.h \
     cardsdeck.h \
     cardsdecktype.h \
-    position.h
+    position.h \
+    meld.h
 
 FORMS    += mainwindow.ui
 

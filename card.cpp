@@ -137,13 +137,13 @@ void Card::setChosen(int playerNumber) {
     if(playerNumber == 0) {
         Position cardPos = this->position;
         if(this->chosen) {
-            cardPos.down += 0.06;
-            cardPos.top += 0.06;
+            cardPos.down -= 0.06;
+            cardPos.top -= 0.06;
             this->chosen = false;
         }
         else {
-            cardPos.down -= 0.06;
-            cardPos.top -= 0.06;
+            cardPos.down += 0.06;
+            cardPos.top += 0.06;
             this->chosen = true;
         }
         this->position = cardPos;

@@ -32,6 +32,7 @@ private:
     float meldButtonBcolor = 55.0f;
     Position meldingButtonPosition = Position(0.7, -0.8, -0.7, 0.9);
     void setMeldButtonColor(float r, float g, float b);
+    void clickOnMeldButton();
 };
 
 #endif // MAINGLWIDGET_H

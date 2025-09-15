@@ -11,7 +11,7 @@
 class Card
 {
     GLuint textureId;
-    bool chosen;
+    bool chosen = false;
 public:
     CardValue value;
     CardSuit suit;

@@ -91,6 +91,36 @@ void Game::generateDecks() {
     this->decks = decks;
 }
 
+std::vector<Meld>& Game::getMelds() {
+    return this->melds;
+}
+
+void Game::addMeld(Meld& meld) {
+    this->melds.push_back(meld);
+}
+
+void Game::initializeMeldCardPositions(Meld* meld) {
+    float margin = 0.4f;
+    float cardHeight = 0.3f;
+    float cardWidth = cardHeight * Card::ratio;
+    Player meldPlayer = meld->getPlayer();
+    float leftX = -0.9f + margin;
+    float rightX = leftX + cardWidth;
+    float startingY = 0;
+    float endY = -(1 - margin);
+    float offsetY = (startingY - endY - cardHeight) / std::max(1, int(meld->getCards().size() - 1));
+
+    if(meldPlayer.getNumber() == 0) {
+        for(auto &card: meld->getCards()) {
+            card->position.setLeft(leftX);
+            card->position.setRight(rightX);
+            card->position.setDown(startingY - cardHeight);
+            card->position.setTop(startingY);
+            startingY -= offsetY;
+        }
+    }
+}
+
 void Game::initializeCardsPositions() {
     float margin = 0.4f;
     float cardHeight = 0.3f;
