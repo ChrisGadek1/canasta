@@ -39,19 +39,19 @@ void Game::generatePlayers() {
 }
 
 void Game::generateDecks() {
-    std::vector<Card> initialCards;
+    std::vector<Card*> initialCards;
 
     for(int suitId = CardSuit::SPADES; suitId < CardSuit::CLUBS; suitId++) {
         for (int cardValueId = CardValue::TWO; cardValueId < CardValue::ACE; cardValueId++) {
-            initialCards.push_back(Card(static_cast<CardValue>(cardValueId), static_cast<CardSuit>(suitId)));
-            initialCards.push_back(Card(static_cast<CardValue>(cardValueId), static_cast<CardSuit>(suitId)));
+            initialCards.push_back(new Card(static_cast<CardValue>(cardValueId), static_cast<CardSuit>(suitId)));
+            initialCards.push_back(new Card(static_cast<CardValue>(cardValueId), static_cast<CardSuit>(suitId)));
         }
     }
 
-    initialCards.push_back(Card(CardValue::JOKER, CardSuit::DIAMONDS));
-    initialCards.push_back(Card(CardValue::JOKER, CardSuit::DIAMONDS));
-    initialCards.push_back(Card(CardValue::JOKER, CardSuit::SPADES));
-    initialCards.push_back(Card(CardValue::JOKER, CardSuit::SPADES));
+    initialCards.push_back(new Card(CardValue::JOKER, CardSuit::DIAMONDS));
+    initialCards.push_back(new Card(CardValue::JOKER, CardSuit::DIAMONDS));
+    initialCards.push_back(new Card(CardValue::JOKER, CardSuit::SPADES));
+    initialCards.push_back(new Card(CardValue::JOKER, CardSuit::SPADES));
 
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine e(seed);
@@ -60,7 +60,7 @@ void Game::generateDecks() {
     std::vector<CardsDeck> playersDecks;
 
     for (auto &player : this->players) {
-        playersDecks.push_back(CardsDeck(CardsDeckType::PLAYERS_OWNED, std::vector<Card>(), player));
+        playersDecks.push_back(CardsDeck(CardsDeckType::PLAYERS_OWNED, std::vector<Card*>(), player));
     }
 
     for(int i = 0; i < 11; i++) {
@@ -70,11 +70,11 @@ void Game::generateDecks() {
         }
     }
 
-    CardsDeck exposedDeck(CardsDeckType::EXPOSED, std::vector<Card>());
+    CardsDeck exposedDeck(CardsDeckType::EXPOSED, std::vector<Card*>());
 
-    Card initialCard = initialCards.back();
+    Card* initialCard = initialCards.back();
     initialCards.pop_back();
-    while(initialCard.value == CardValue::THREE && (initialCard.suit == CardSuit::DIAMONDS || initialCard.suit == CardSuit::HEARTS)) {
+    while(initialCard->value == CardValue::THREE && (initialCard->suit == CardSuit::DIAMONDS || initialCard->suit == CardSuit::HEARTS)) {
         exposedDeck.addCard(initialCard);
         initialCard = initialCards.back();
         initialCards.pop_back();
@@ -126,7 +126,7 @@ void Game::initializeCardsPositions() {
     float cardHeight = 0.3f;
     for (unsigned short deckI = 0; deckI < this->decks.size(); deckI++) {
         if (this->decks[deckI].getType() == PLAYERS_OWNED) {
-            auto &cards = this->decks[deckI].getCards();
+            std::vector<Card *> cards = this->decks[deckI].getCards();
             int n = cards.size();
             if (n == 0) continue;
 
@@ -142,20 +142,20 @@ void Game::initializeCardsPositions() {
                 float offsetX = (endX - startingX - cardWidth) / std::max(1, n - 1);
 
                 for (int cardI = 0; cardI < n; cardI++) {
-                    cards[cardI].position.setLeft(startingX);
-                    cards[cardI].position.setRight(startingX + cardWidth);
-                    cards[cardI].position.setTop(topY);
-                    cards[cardI].position.setDown(bottomY);
+                    cards[cardI]->position.setLeft(startingX);
+                    cards[cardI]->position.setRight(startingX + cardWidth);
+                    cards[cardI]->position.setTop(topY);
+                    cards[cardI]->position.setDown(bottomY);
                     startingX += offsetX;
                     if(cardI == 0) {
-                        cards[cardI].above = &cards[cardI + 1];
+                        cards[cardI]->above = cards[cardI + 1];
                     }
                     else if(cardI > 0 && cardI < n - 1) {
-                        cards[cardI].above = &cards[cardI + 1];
-                        cards[cardI].behind = &cards[cardI - 1];
+                        cards[cardI]->above = cards[cardI + 1];
+                        cards[cardI]->behind = cards[cardI - 1];
                     }
                     else {
-                        cards[cardI].behind = &cards[cardI - 1];
+                        cards[cardI]->behind = cards[cardI - 1];
                     }
                 }
             }
@@ -169,10 +169,10 @@ void Game::initializeCardsPositions() {
                 float offsetX = (endX - startingX - cardWidth) / std::max(1, n - 1);
 
                 for (int cardI = 0; cardI < n; cardI++) {
-                    cards[cardI].position.setLeft(startingX);
-                    cards[cardI].position.setRight(startingX + cardWidth);
-                    cards[cardI].position.setTop(topY);
-                    cards[cardI].position.setDown(bottomY);
+                    cards[cardI]->position.setLeft(startingX);
+                    cards[cardI]->position.setRight(startingX + cardWidth);
+                    cards[cardI]->position.setTop(topY);
+                    cards[cardI]->position.setDown(bottomY);
                     startingX += offsetX;
                 }
             }
@@ -186,10 +186,10 @@ void Game::initializeCardsPositions() {
                 float offsetY = (endY - startingY - cardWidth) / std::max(1, n - 1);
 
                 for (int cardI = 0; cardI < n; cardI++) {
-                    cards[cardI].position.setLeft(leftX);
-                    cards[cardI].position.setRight(rightX);
-                    cards[cardI].position.setDown(startingY);
-                    cards[cardI].position.setTop(startingY + cardWidth);
+                    cards[cardI]->position.setLeft(leftX);
+                    cards[cardI]->position.setRight(rightX);
+                    cards[cardI]->position.setDown(startingY);
+                    cards[cardI]->position.setTop(startingY + cardWidth);
                     startingY += offsetY;
                 }
             }
@@ -203,10 +203,10 @@ void Game::initializeCardsPositions() {
                 float offsetY = (endY - startingY - cardWidth) / std::max(1, n - 1);
 
                 for (int cardI = 0; cardI < n; cardI++) {
-                    cards[cardI].position.setLeft(leftX);
-                    cards[cardI].position.setRight(rightX);
-                    cards[cardI].position.setDown(startingY);
-                    cards[cardI].position.setTop(startingY + cardWidth);
+                    cards[cardI]->position.setLeft(leftX);
+                    cards[cardI]->position.setRight(rightX);
+                    cards[cardI]->position.setDown(startingY);
+                    cards[cardI]->position.setTop(startingY + cardWidth);
                     startingY += offsetY;
                 }
             }

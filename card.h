@@ -30,6 +30,13 @@ public:
     static void loadReverseTexture();
     void setChosen(int playerNumber);
     bool isChosen();
+
+    bool operator==(const Card& b) const {
+        if (value != b.value || suit != b.suit) return false;
+        if (above == nullptr && b.above == nullptr) return true;
+        if (above == nullptr || b.above == nullptr) return false;
+        return above->value == b.above->value && above->suit == b.above->suit;
+    }
 };
 
 #endif // CARD_H

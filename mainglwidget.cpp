@@ -57,7 +57,7 @@ void MainGLWidget::initializeGL()
 
     for(auto &deck : this->game.getDecks()) {
         for(auto &card : deck.getCards()) {
-            card.loadTexture();
+            card->loadTexture();
         }
     }
     Card::loadReverseTexture();
@@ -76,11 +76,13 @@ void MainGLWidget::resizeGL(int w, int h)
 
 void  MainGLWidget::clickOnMeldButton() {
     std::vector<Card*> chosenCards;
+    std::vector<CardsDeck*> chosenDecks;
     for(auto &deck: this->game.getDecks()) {
         if(deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() == 0) {
-            for(auto &card: deck.getCards()) {
-                if(card.isChosen()) {
-                    chosenCards.push_back(&card);
+            for(auto card: deck.getCards()) {
+                if(card->isChosen()) {
+                    chosenCards.push_back(card);
+                    chosenDecks.push_back(&deck);
                 }
             }
         }
@@ -93,14 +95,15 @@ void  MainGLWidget::clickOnMeldButton() {
     }
     if(chosenCards.size() > 0) {
         Meld meld(chosenCards[0]->value, *currentPlayer);
-        for(Card* card: chosenCards) {
-            meld.addCard(card);
+        for (int i = 0; i < chosenDecks.size(); i++) {
+            meld.addCard(chosenCards[i]);
+            std::vector<Card*>& cards = chosenDecks[i]->getCards();
+            cards.erase(std::find(cards.begin(), cards.end(), chosenCards[i]));
         }
         this->game.addMeld(meld);
         this->game.initializeMeldCardPositions(&meld);
         update();
     }
-
 }
 
 void MainGLWidget::mousePressEvent(QMouseEvent * event) {
@@ -110,10 +113,10 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     for(auto &deck: this->game.getDecks()) {
         if(deck.getType() == PLAYERS_OWNED) {
             for(auto &card: deck.getCards()) {
-                Position cardPos = Position::toPx(card.position.left, card.position.down, card.position.top, card.position.right, width(), height());
+                Position cardPos = Position::toPx(card->position.left, card->position.down, card->position.top, card->position.right, width(), height());
                 if(cardPos.down > y && cardPos.top < y && cardPos.left < x && cardPos.right > x) {
                     if(deck.getPlayer().getNumber() == 0) {
-                        foundCards.push_back(&card);
+                        foundCards.push_back(card);
                     }
                 }
             }
@@ -261,8 +264,13 @@ void MainGLWidget::paintGL()
                         angle = 90;
                         break;
                 }
-                card.draw(!deck.getPlayer().getIsHumanControlled(), angle);
+                card->draw(!deck.getPlayer().getIsHumanControlled(), angle);
             }
+        }
+    }
+    for (auto &meld : this->game.getMelds()) {
+        for(auto &card: meld.getCards()) {
+            card->draw(false, 0);
         }
     }
     drawButton(this->meldingButtonPosition, "Melduj");
