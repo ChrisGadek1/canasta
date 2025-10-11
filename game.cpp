@@ -99,26 +99,55 @@ void Game::addMeld(Meld& meld) {
     this->melds.push_back(meld);
 }
 
-void Game::initializeMeldCardPositions(Meld* meld) {
+void Game::initializeMeldCardPositions() {
     float margin = 0.4f;
     float cardHeight = 0.3f;
     float cardWidth = cardHeight * Card::ratio;
-    Player meldPlayer = meld->getPlayer();
     float leftX = -0.9f + margin;
     float rightX = leftX + cardWidth;
-    float startingY = 0;
-    float endY = -(1 - margin);
-    float offsetY = (startingY - endY - cardHeight) / std::max(1, int(meld->getCards().size() - 1));
+    float offsetX = (2.0 + leftX * 2 - cardWidth) / (this->melds.size() - 1);
 
-    if(meldPlayer.getNumber() == 0) {
-        for(auto &card: meld->getCards()) {
+    for (auto &meld : this->melds) {
+        Player meldPlayer = meld.getPlayer();
+        float startingY = meldPlayer.getNumber() == 0 || meldPlayer.getNumber() == 2 ? 0 : (1 - margin);
+        float endY = meldPlayer.getNumber() == 0 || meldPlayer.getNumber() == 2 ? - (1 - margin) : 0;
+        float offsetY = (startingY - endY - cardHeight) / std::max(1, int(meld.getCards().size() - 1));
+
+        for(auto &card: meld.getCards()) {
             card->position.setLeft(leftX);
             card->position.setRight(rightX);
             card->position.setDown(startingY - cardHeight);
             card->position.setTop(startingY);
             startingY -= offsetY;
         }
+
+        leftX += offsetX;
+        rightX = leftX + cardWidth;
     }
+}
+
+bool Game::canPlayerMeld(Player* player) {
+    for (auto &deck: this->decks) {
+        if (deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() == player->getNumber()) {
+            Meld tempMeld(deck.getCards()[0]->value, *player);
+            for (auto &card: deck.getCards()) {
+                if (card->isChosen()) {
+                    tempMeld.addCard(card);
+                }
+            }
+            return tempMeld.valid();
+        }
+    }
+    return false;
+}
+
+bool Game::canHumanPlayerMeld() {
+    auto it = std::find_if(players.begin(), players.end(),[](Player& p){ return p.getNumber() == 0; });
+    if (it != players.end()) {
+        Player& currentPlayerRef = *it;
+        return canPlayerMeld(&currentPlayerRef);
+    }
+    return false;
 }
 
 void Game::initializeCardsPositions() {

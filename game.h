@@ -18,11 +18,13 @@ public:
     Game() {}
     void initialize();
     void initializeCardsPositions();
-    void initializeMeldCardPositions(Meld* meld);
+    void initializeMeldCardPositions();
     std::vector<CardsDeck>& getDecks();
     std::vector<Player>& getPlayers();
     std::vector<Meld>& getMelds();
     void addMeld(Meld& meld);
+    bool canPlayerMeld(Player* player);
+    bool canHumanPlayerMeld();
 };
 
 #endif // GAME_H

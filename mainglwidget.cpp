@@ -101,7 +101,7 @@ void  MainGLWidget::clickOnMeldButton() {
             cards.erase(std::find(cards.begin(), cards.end(), chosenCards[i]));
         }
         this->game.addMeld(meld);
-        this->game.initializeMeldCardPositions(&meld);
+        this->game.initializeMeldCardPositions();
         update();
     }
 }
@@ -138,7 +138,7 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
         update();
     }
     Position buttonPos = Position::toPx(this->meldingButtonPosition.left, this->meldingButtonPosition.down, this->meldingButtonPosition.top, this->meldingButtonPosition.right, width(), height());
-    if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x) {
+    if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x && this->game.canHumanPlayerMeld()) {
         setMeldButtonColor(92.0f, 87.0f, 87.0f);
         update();
         clickOnMeldButton();
@@ -197,7 +197,7 @@ void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
     int x = eventMove->pos().x();
     int y = eventMove->pos().y();
     Position buttonPos = Position::toPx(this->meldingButtonPosition.left, this->meldingButtonPosition.down, this->meldingButtonPosition.top, this->meldingButtonPosition.right, width(), height());
-    if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x) {
+    if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x && this->game.canHumanPlayerMeld()) {
         QApplication::setOverrideCursor(Qt::PointingHandCursor);
         setMeldButtonColor(97.0f, 78.0f, 78.0f);
         update();
@@ -207,13 +207,15 @@ void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
         setMeldButtonColor(82.0f, 57.0f, 55.0f);
         update();
     }
+
+
 }
 
 void MainGLWidget::mouseReleaseEvent(QMouseEvent *eventMove) {
     int x = eventMove->pos().x();
     int y = eventMove->pos().y();
     Position buttonPos = Position::toPx(this->meldingButtonPosition.left, this->meldingButtonPosition.down, this->meldingButtonPosition.top, this->meldingButtonPosition.right, width(), height());
-    if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x) {
+    if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x && this->game.canHumanPlayerMeld()) {
         QApplication::setOverrideCursor(Qt::PointingHandCursor);
         setMeldButtonColor(97.0f, 78.0f, 78.0f);
         update();
