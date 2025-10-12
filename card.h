@@ -27,6 +27,7 @@ public:
     void loadTexture();
     void draw(bool reverse, float angleDegrees) const;
     static constexpr float ratio = 0.68870523416;
+    static constexpr float cardHeight = 0.3;
     static void loadReverseTexture();
     void setChosen(int playerNumber);
     bool isChosen();

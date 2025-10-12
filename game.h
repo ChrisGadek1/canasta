@@ -25,6 +25,10 @@ public:
     void addMeld(Meld& meld);
     bool canPlayerMeld(Player* player);
     bool canHumanPlayerMeld();
+    CardsDeck& getHiddenDeck();
+    void handleClickOnHiddenDeck();
+    CardsDeck& getHumanPlayerDeck();
+    bool mouseOverHiddenDeck(int vw, int vh, int x, int y);
 };
 
 #endif // GAME_H

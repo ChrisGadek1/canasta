@@ -74,13 +74,22 @@ void Game::generateDecks() {
 
     Card* initialCard = initialCards.back();
     initialCards.pop_back();
+    constexpr float exposedBottomPos = 0.65f;
+    constexpr float exposedLeftPos = 0.65f;
+    initialCard->position = Position(exposedLeftPos, exposedBottomPos, exposedBottomPos + Card::cardHeight, exposedLeftPos + Card::cardHeight * Card::ratio);
     while(initialCard->value == CardValue::THREE && (initialCard->suit == CardSuit::DIAMONDS || initialCard->suit == CardSuit::HEARTS)) {
         exposedDeck.addCard(initialCard);
         initialCard = initialCards.back();
+        initialCard->position = Position(exposedLeftPos, exposedBottomPos, exposedBottomPos + Card::cardHeight, exposedLeftPos + Card::cardHeight * Card::ratio);
         initialCards.pop_back();
     }
-
     exposedDeck.addCard(initialCard);
+
+    for (auto &card: initialCards) {
+        constexpr float hiddenBottomPos = 0.65f;
+        constexpr float hiddenRightPos = -0.65f;
+        card->position = Position(hiddenRightPos - Card::cardHeight * Card::ratio, hiddenBottomPos, hiddenBottomPos + Card::cardHeight, hiddenRightPos);
+    }
 
     CardsDeck hiddenDeck(CardsDeckType::HIDDEN, initialCards);
 
@@ -91,6 +100,13 @@ void Game::generateDecks() {
     this->decks = decks;
 }
 
+CardsDeck& Game::getHiddenDeck() {
+    auto hiddenDeck = std::find_if(this->getDecks().begin(), this->getDecks().end(), [](CardsDeck deck) { return deck.getType() == HIDDEN; });
+    if (hiddenDeck != this->getDecks().end()) {
+        return *hiddenDeck;
+    }
+}
+
 std::vector<Meld>& Game::getMelds() {
     return this->melds;
 }
@@ -99,9 +115,39 @@ void Game::addMeld(Meld& meld) {
     this->melds.push_back(meld);
 }
 
+void Game::handleClickOnHiddenDeck() {
+    CardsDeck& hiddenDeck = this->getHiddenDeck();
+    if (hiddenDeck.getCards().size() > 0) {
+        Card* firstCard = hiddenDeck.getCards().back();
+        hiddenDeck.getCards().pop_back();
+        CardsDeck& humanPlayerDeck = this->getHumanPlayerDeck();
+        if (humanPlayerDeck.getCards().size() > 0) {
+            Card* lastPlayersCard = humanPlayerDeck.getCards().back();
+            firstCard->behind = lastPlayersCard;
+            lastPlayersCard->above = firstCard;
+            humanPlayerDeck.addCard(firstCard);
+            initializeCardsPositions();
+        }
+    }
+}
+
+CardsDeck& Game::getHumanPlayerDeck() {
+    auto humanPlayerDec = std::find_if(this->getDecks().begin(), this->getDecks().end(), [](CardsDeck deck) { return deck.getType() == PLAYERS_OWNED && deck.getPlayer().getIsHumanControlled(); });
+    if (humanPlayerDec != this->getDecks().end()) {
+        return *humanPlayerDec;
+    }
+}
+
+bool Game::mouseOverHiddenDeck(int vw, int vh, int x, int y) {
+    CardsDeck& hiddenDeck = this->getHiddenDeck();
+    Card* firstCard = hiddenDeck.getCards()[0];
+    Position hiddenTopCardPos = Position::toPx(firstCard->position.left, firstCard->position.down, firstCard->position.top, firstCard->position.right, vw, vh);
+    return hiddenTopCardPos.down > y && hiddenTopCardPos.top < y && hiddenTopCardPos.right > x && hiddenTopCardPos.left < x;
+}
+
 void Game::initializeMeldCardPositions() {
     float margin = 0.4f;
-    float cardHeight = 0.3f;
+    float cardHeight = Card::cardHeight;
     float cardWidth = cardHeight * Card::ratio;
     float leftX = -0.9f + margin;
     float rightX = leftX + cardWidth;
@@ -152,7 +198,7 @@ bool Game::canHumanPlayerMeld() {
 
 void Game::initializeCardsPositions() {
     float margin = 0.4f;
-    float cardHeight = 0.3f;
+    float cardHeight = Card::cardHeight;
     for (unsigned short deckI = 0; deckI < this->decks.size(); deckI++) {
         if (this->decks[deckI].getType() == PLAYERS_OWNED) {
             std::vector<Card *> cards = this->decks[deckI].getCards();

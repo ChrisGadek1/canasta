@@ -110,31 +110,21 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     std::vector<Card*> foundCards;
     int x = event->pos().x();
     int y = event->pos().y();
+    Card* foundTopCard = nullptr;
     for(auto &deck: this->game.getDecks()) {
         if(deck.getType() == PLAYERS_OWNED) {
             for(auto &card: deck.getCards()) {
                 Position cardPos = Position::toPx(card->position.left, card->position.down, card->position.top, card->position.right, width(), height());
                 if(cardPos.down > y && cardPos.top < y && cardPos.left < x && cardPos.right > x) {
                     if(deck.getPlayer().getNumber() == 0) {
-                        foundCards.push_back(card);
+                        foundTopCard = card;
                     }
                 }
             }
         }
     }
-
-    if(foundCards.size() == 2) {
-        if(foundCards[0] == foundCards[1]->above) {
-            foundCards[0]->setChosen(0);
-            update();
-        }
-        else {
-            foundCards[1]->setChosen(0);
-            update();
-        }
-    }
-    else if(foundCards.size() == 1) {
-        foundCards[0]->setChosen(0);
+    if (foundTopCard) {
+        foundTopCard->setChosen(0);
         update();
     }
     Position buttonPos = Position::toPx(this->meldingButtonPosition.left, this->meldingButtonPosition.down, this->meldingButtonPosition.top, this->meldingButtonPosition.right, width(), height());
@@ -142,6 +132,9 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
         setMeldButtonColor(92.0f, 87.0f, 87.0f);
         update();
         clickOnMeldButton();
+    }
+    if (this->game.mouseOverHiddenDeck(width(), height(), x, y)) {
+        this->game.handleClickOnHiddenDeck();
     }
 }
 
@@ -207,8 +200,12 @@ void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
         setMeldButtonColor(82.0f, 57.0f, 55.0f);
         update();
     }
-
-
+    if (this->game.mouseOverHiddenDeck(width(), height(), x, y) && !this->game.getHiddenDeck().getCards().empty()) {
+        QApplication::setOverrideCursor(Qt::PointingHandCursor);
+    }
+    else {
+        QApplication::setOverrideCursor(Qt::ArrowCursor);
+    }
 }
 
 void MainGLWidget::mouseReleaseEvent(QMouseEvent *eventMove) {
@@ -267,6 +264,16 @@ void MainGLWidget::paintGL()
                         break;
                 }
                 card->draw(!deck.getPlayer().getIsHumanControlled(), angle);
+            }
+        }
+        else if (deck.getType() == EXPOSED) {
+            for (auto &card: deck.getCards()) {
+                card->draw(false, 0);
+            }
+        }
+        else {
+            for (auto &card: deck.getCards()) {
+                card->draw(true, 0);
             }
         }
     }
