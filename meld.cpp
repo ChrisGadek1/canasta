@@ -18,14 +18,58 @@ Player& Meld::getPlayer() {
 }
 
 bool Meld::valid() const {
-    return allCardsHaveTheSameValue();
+    return allNonMagicCardsHaveTheSameValue() &&
+           hasAtLeastTwoNonMagicCards() &&
+           hasAtLeastThreeTotalCards() &&
+           magicCardsNotExceedingNonMagicCards();
 }
 
-bool Meld::allCardsHaveTheSameValue() const {
-    for (int i = 1; i < this->cards.size(); i++) {
-        if (this->cards[i]->value != this->cards[i - 1]->value && this->cards[i]->value != JOKER && this->cards[i - 1]->value != JOKER) {
-            return false;
+bool Meld::isMagicCard(CardValue cardValue) const {
+    return cardValue == TWO || cardValue == JOKER;
+}
+
+int Meld::countMagicCards() const {
+    int count = 0;
+    for (auto& card : this->cards) {
+        if (isMagicCard(card->value)) {
+            count++;
         }
     }
-    return this->cards.size() > 2;
+    return count;
+}
+
+bool Meld::allNonMagicCardsHaveTheSameValue() const {
+    CardValue baseValue = INVALID_CARD_VALUE;
+    
+    for (auto& card : this->cards) {
+        if (!isMagicCard(card->value)) {
+            if (baseValue == INVALID_CARD_VALUE) {
+                baseValue = card->value;
+            } else if (card->value != baseValue) {
+                return false;
+            }
+        }
+    }
+    
+    return true;
+}
+
+bool Meld::hasAtLeastTwoNonMagicCards() const {
+    int nonMagicCardCount = 0;
+    for (auto& card : this->cards) {
+        if (!isMagicCard(card->value)) {
+            nonMagicCardCount++;
+        }
+    }
+    return nonMagicCardCount >= 2;
+}
+
+bool Meld::hasAtLeastThreeTotalCards() const {
+    return this->cards.size() >= 3;
+}
+
+bool Meld::magicCardsNotExceedingNonMagicCards() const {
+    int magicCardCount = countMagicCards();
+    int nonMagicCardCount = static_cast<int>(this->cards.size()) - magicCardCount;
+    return magicCardCount <= nonMagicCardCount;
 }

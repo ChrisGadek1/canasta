@@ -2,6 +2,7 @@
 #define CARDVALUE_H
 
 enum CardValue {
+    INVALID_CARD_VALUE = -1,
     TWO,
     THREE,
     FOUR,
