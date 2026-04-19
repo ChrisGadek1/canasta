@@ -52,10 +52,12 @@ A 4-player Canasta card game implemented in C++ using Qt5 and OpenGL for renderi
 
 ## Key Features
 
-1. **Card Selection**: Click on own cards to select/deselect for melding
-2. **Drawing Cards**: Click hidden deck to draw a card
-3. **Melding**: Place valid combinations (same-value cards) on the table
-4. **OpenGL Rendering**: All cards rendered with textures from [`images/cards/`](images/cards/)
+1. **Card Selection**: Click on own cards to select/deselect for melding or discarding
+2. **Drawing Cards**: Click hidden deck to draw a card (once per turn)
+3. **Discarding**: Select exactly one card and click the exposed deck to discard it
+4. **Melding**: Place valid combinations (same-value cards) on the table
+5. **Turn Management**: Track current player with `currentPlayerIndex`; human player is index 0
+6. **OpenGL Rendering**: All cards rendered with textures from [`images/cards/`](images/cards/)
 
 ## Meld Validation Rules
 
@@ -116,3 +118,9 @@ canasta/
 2. **Coordinate System**: Normalized coordinates (-1 to 1), converted to pixels via [`Position::toPx()`](position.h:12)
 3. **Card Linking**: Cards maintain `above` and `behind` pointers for stacking visualization
 4. **Texture Loading**: Card textures follow naming pattern `{value}_of_{suit}.png` (see [`Card::texturePath()`](card.h:26))
+
+## Important Notes for Agents
+
+1. Agents should not try to run this game, because it's not a terminal based game
+2. Agents should ALWAYS try to follow existing conventions in the project, regarding variable names, functions, creating logic etc.
+3. After adding changes, agents should ALWAYS get through the changes they made and check if they're meeting requirements and don't need to be refactored

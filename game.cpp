@@ -74,13 +74,11 @@ void Game::generateDecks() {
 
     Card* initialCard = initialCards.back();
     initialCards.pop_back();
-    constexpr float exposedBottomPos = 0.65f;
-    constexpr float exposedLeftPos = 0.65f;
-    initialCard->position = Position(exposedLeftPos, exposedBottomPos, exposedBottomPos + Card::cardHeight, exposedLeftPos + Card::cardHeight * Card::ratio);
+    initialCard->position = Position(Game::exposedLeftPos, Game::exposedBottomPos, Game::exposedBottomPos + Card::cardHeight, Game::exposedLeftPos + Card::cardHeight * Card::ratio);
     while(initialCard->value == CardValue::THREE && (initialCard->suit == CardSuit::DIAMONDS || initialCard->suit == CardSuit::HEARTS)) {
         exposedDeck.addCard(initialCard);
         initialCard = initialCards.back();
-        initialCard->position = Position(exposedLeftPos, exposedBottomPos, exposedBottomPos + Card::cardHeight, exposedLeftPos + Card::cardHeight * Card::ratio);
+        initialCard->position = Position(Game::exposedLeftPos, Game::exposedBottomPos, Game::exposedBottomPos + Card::cardHeight, Game::exposedLeftPos + Card::cardHeight * Card::ratio);
         initialCards.pop_back();
     }
     exposedDeck.addCard(initialCard);
@@ -116,6 +114,9 @@ void Game::addMeld(Meld& meld) {
 }
 
 void Game::handleClickOnHiddenDeck() {
+    if (currentPlayerIndex != 0) return;
+    if (humanPlayerHasDrawnThisTurn) return;
+
     CardsDeck& hiddenDeck = this->getHiddenDeck();
     if (hiddenDeck.getCards().size() > 0) {
         Card* firstCard = hiddenDeck.getCards().back();
@@ -129,12 +130,83 @@ void Game::handleClickOnHiddenDeck() {
             initializeCardsPositions();
         }
     }
+    humanPlayerHasDrawnThisTurn = true;
+}
+
+void Game::resetHumanPlayerDrawFlag() {
+    humanPlayerHasDrawnThisTurn = false;
 }
 
 CardsDeck& Game::getHumanPlayerDeck() {
     auto humanPlayerDec = std::find_if(this->getDecks().begin(), this->getDecks().end(), [](CardsDeck deck) { return deck.getType() == PLAYERS_OWNED && deck.getPlayer().getIsHumanControlled(); });
     if (humanPlayerDec != this->getDecks().end()) {
         return *humanPlayerDec;
+    }
+}
+
+CardsDeck& Game::getExposedDeck() {
+    auto exposedDeck = std::find_if(this->getDecks().begin(), this->getDecks().end(), [](CardsDeck deck) { return deck.getType() == EXPOSED; });
+    if (exposedDeck != this->getDecks().end()) {
+        return *exposedDeck;
+    }
+}
+
+bool Game::mouseOverExposedDeck(int vw, int vh, int x, int y) {
+    CardsDeck& exposedDeck = this->getExposedDeck();
+    if (exposedDeck.getCards().empty()) return false;
+    Card* topCard = exposedDeck.getCards().back();
+    Position exposedTopCardPos = Position::toPx(topCard->position.left, topCard->position.down, topCard->position.top, topCard->position.right, vw, vh);
+    return exposedTopCardPos.down > y && exposedTopCardPos.top < y && exposedTopCardPos.right > x && exposedTopCardPos.left < x;
+}
+
+bool Game::hasExactlyOneCardSelected() {
+    int selectedCount = 0;
+    for (auto &deck : this->getDecks()) {
+        if (deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() == 0) {
+            for (auto &card : deck.getCards()) {
+                if (card->isChosen()) {
+                    selectedCount++;
+                }
+            }
+        }
+    }
+    return selectedCount == 1;
+}
+
+void Game::handleClickOnExposedDeck() {
+    if (currentPlayerIndex != 0) return;
+    if (!hasExactlyOneCardSelected()) return;
+
+    CardsDeck& humanPlayerDeck = this->getHumanPlayerDeck();
+    Card* selectedCard = nullptr;
+
+    for (auto &card : humanPlayerDeck.getCards()) {
+        if (card->isChosen()) {
+            selectedCard = card;
+            break;
+        }
+    }
+
+    if (selectedCard) {
+        std::vector<Card*>& cards = humanPlayerDeck.getCards();
+        cards.erase(std::find(cards.begin(), cards.end(), selectedCard));
+
+        CardsDeck& exposedDeck = this->getExposedDeck();
+        selectedCard->setChosen(0);
+
+        if (exposedDeck.getCards().size() > 0) {
+            Card* previousTopCard = exposedDeck.getCards().back();
+            selectedCard->behind = previousTopCard;
+            previousTopCard->above = selectedCard;
+        } else {
+            selectedCard->behind = nullptr;
+            selectedCard->above = nullptr;
+        }
+
+        selectedCard->position = Position(Game::exposedLeftPos, Game::exposedBottomPos, Game::exposedBottomPos + Card::cardHeight, Game::exposedLeftPos + Card::cardHeight * Card::ratio);
+
+        exposedDeck.addCard(selectedCard);
+        initializeCardsPositions();
     }
 }
 

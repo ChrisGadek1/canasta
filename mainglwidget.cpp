@@ -136,6 +136,9 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     if (this->game.mouseOverHiddenDeck(width(), height(), x, y)) {
         this->game.handleClickOnHiddenDeck();
     }
+    if (this->game.mouseOverExposedDeck(width(), height(), x, y) && this->game.hasExactlyOneCardSelected()) {
+        this->game.handleClickOnExposedDeck();
+    }
 }
 
 #include <QFont>
@@ -200,7 +203,10 @@ void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
         setMeldButtonColor(82.0f, 57.0f, 55.0f);
         update();
     }
-    if (this->game.mouseOverHiddenDeck(width(), height(), x, y) && !this->game.getHiddenDeck().getCards().empty()) {
+    if (this->game.mouseOverHiddenDeck(width(), height(), x, y) && !this->game.getHiddenDeck().getCards().empty() && !this->game.hasHumanPlayerDrawnThisTurn()) {
+        QApplication::setOverrideCursor(Qt::PointingHandCursor);
+    }
+    else if (this->game.mouseOverExposedDeck(width(), height(), x, y) && this->game.hasExactlyOneCardSelected()) {
         QApplication::setOverrideCursor(Qt::PointingHandCursor);
     }
     else {
