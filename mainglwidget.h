@@ -7,6 +7,18 @@
 #include <vector>
 #include "game.h"
 
+// Arrow button constants
+static constexpr float ARROW_SIZE = 0.1f;
+static constexpr float ARROW_Y_DOWN = -0.8f;
+static constexpr float ARROW_Y_TOP = -0.7f;
+static constexpr float ARROW_ALIGNMENT = 0.72f;
+
+// Melding button constants
+static constexpr float MELDING_BUTTON_LEFT = 0.75f;
+static constexpr float MELDING_BUTTON_DOWN = -0.95f;
+static constexpr float MELDING_BUTTON_TOP = -0.85f;
+static constexpr float MELDING_BUTTON_RIGHT = 0.95f;
+
 class MainGLWidget : public QGLWidget
 {
     Q_OBJECT
@@ -25,12 +37,15 @@ protected:
 private:
     Game game;
     GLuint textureId;
+    GLuint leftArrowTextureId;
+    GLuint rightArrowTextureId;
     QImage loadTexture(const QString &path);
-    void drawButton(Position position, std::string text);
+    void drawMeldingButton();
+    void drawLeftArrowButton();
+    void drawRightArrowButton();
     float meldButtonRcolor = 82.0f;
     float meldButtonGcolor = 57.0f;
     float meldButtonBcolor = 55.0f;
-    Position meldingButtonPosition = Position(0.7, -0.8, -0.7, 0.9);
     void setMeldButtonColor(float r, float g, float b);
     void clickOnMeldButton();
 };

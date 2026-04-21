@@ -19,6 +19,8 @@ std::vector<CardsDeck>& Game::getDecks() {
 }
 
 void Game::initialize() {
+    this->currentPlayerIndex = 0;
+    this->humanPlayerHasDrawnThisTurn = false;
     this->generatePlayers();
     this->generateDecks();
     this->initializeCardsPositions();

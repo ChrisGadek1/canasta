@@ -23,6 +23,10 @@ MainGLWidget::~MainGLWidget()
 {
     if (textureId)
         glDeleteTextures(1, &textureId);
+    if (leftArrowTextureId)
+        glDeleteTextures(1, &leftArrowTextureId);
+    if (rightArrowTextureId)
+        glDeleteTextures(1, &rightArrowTextureId);
 }
 
 QImage MainGLWidget::loadTexture(const QString &path)
@@ -61,6 +65,29 @@ void MainGLWidget::initializeGL()
         }
     }
     Card::loadReverseTexture();
+
+    QImage leftArrowImg = loadTexture(":/images/images/arrow_left.png");
+    if (!leftArrowImg.isNull()) {
+        glGenTextures(1, &leftArrowTextureId);
+        glBindTexture(GL_TEXTURE_2D, leftArrowTextureId);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                     leftArrowImg.width(), leftArrowImg.height(),
+                     0, GL_RGBA, GL_UNSIGNED_BYTE, leftArrowImg.bits());
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    }
+
+    QImage rightArrowImg = loadTexture(":/images/images/arrow_right.png");
+    if (!rightArrowImg.isNull()) {
+        glGenTextures(1, &rightArrowTextureId);
+        glBindTexture(GL_TEXTURE_2D, rightArrowTextureId);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                     rightArrowImg.width(), rightArrowImg.height(),
+                     0, GL_RGBA, GL_UNSIGNED_BYTE, rightArrowImg.bits());
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    }
+
     setMouseTracking(true);
 }
 
@@ -127,7 +154,7 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
         foundTopCard->setChosen(0);
         update();
     }
-    Position buttonPos = Position::toPx(this->meldingButtonPosition.left, this->meldingButtonPosition.down, this->meldingButtonPosition.top, this->meldingButtonPosition.right, width(), height());
+    Position buttonPos = Position::toPx(MELDING_BUTTON_LEFT, MELDING_BUTTON_DOWN, MELDING_BUTTON_TOP, MELDING_BUTTON_RIGHT, width(), height());
     if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x && this->game.canHumanPlayerMeld()) {
         setMeldButtonColor(92.0f, 87.0f, 87.0f);
         update();
@@ -145,30 +172,30 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
 #include <QFontMetrics>
 #include <QString>
 
-void MainGLWidget::drawButton(Position position, std::string text) {
+void MainGLWidget::drawMeldingButton() {
     glDisable(GL_TEXTURE_2D);
     glColor3f(this->meldButtonRcolor/255.0f, this->meldButtonGcolor/255.0f, this->meldButtonBcolor/255.0f);
 
     glBegin(GL_QUADS);
-        glVertex2f(position.left,  position.down);
-        glVertex2f(position.right, position.down);
-        glVertex2f(position.right, position.top);
-        glVertex2f(position.left,  position.top);
+        glVertex2f(MELDING_BUTTON_LEFT,  MELDING_BUTTON_DOWN);
+        glVertex2f(MELDING_BUTTON_RIGHT, MELDING_BUTTON_DOWN);
+        glVertex2f(MELDING_BUTTON_RIGHT, MELDING_BUTTON_TOP);
+        glVertex2f(MELDING_BUTTON_LEFT,  MELDING_BUTTON_TOP);
     glEnd();
 
     glColor3f(0.f, 0.f, 0.f);
     glBegin(GL_LINE_LOOP);
-        glVertex2f(position.left,  position.down);
-        glVertex2f(position.right, position.down);
-        glVertex2f(position.right, position.top);
-        glVertex2f(position.left,  position.top);
+        glVertex2f(MELDING_BUTTON_LEFT,  MELDING_BUTTON_DOWN);
+        glVertex2f(MELDING_BUTTON_RIGHT, MELDING_BUTTON_DOWN);
+        glVertex2f(MELDING_BUTTON_RIGHT, MELDING_BUTTON_TOP);
+        glVertex2f(MELDING_BUTTON_LEFT,  MELDING_BUTTON_TOP);
     glEnd();
 
     glEnable(GL_TEXTURE_2D);
     glColor3f(1.f, 1.f, 1.f);
 
-    float centerX = (position.left + position.right) / 2.0f;
-    float centerY = (position.down + position.top) / 2.0f;
+    float centerX = (MELDING_BUTTON_LEFT + MELDING_BUTTON_RIGHT) / 2.0f;
+    float centerY = (MELDING_BUTTON_DOWN + MELDING_BUTTON_TOP) / 2.0f;
 
     int px = static_cast<int>( (centerX + 1.0f) * width()  * 0.5f );
     int py = static_cast<int>( (1.0f - centerY) * height() * 0.5f );
@@ -176,7 +203,7 @@ void MainGLWidget::drawButton(Position position, std::string text) {
     QFont font("Arial", 14, QFont::Bold);
     QFontMetrics fm(font);
 
-    QString qs = QString::fromStdString(text);
+    QString qs = tr("Melduj");
     int textWidth  = fm.width(qs);
 
     int ascent  = fm.ascent();
@@ -192,9 +219,11 @@ void MainGLWidget::drawButton(Position position, std::string text) {
 void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
     int x = eventMove->pos().x();
     int y = eventMove->pos().y();
-    Position buttonPos = Position::toPx(this->meldingButtonPosition.left, this->meldingButtonPosition.down, this->meldingButtonPosition.top, this->meldingButtonPosition.right, width(), height());
+    Position buttonPos = Position::toPx(MELDING_BUTTON_LEFT, MELDING_BUTTON_DOWN, MELDING_BUTTON_TOP, MELDING_BUTTON_RIGHT, width(), height());
+    bool setToHand = false;
     if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x && this->game.canHumanPlayerMeld()) {
         QApplication::setOverrideCursor(Qt::PointingHandCursor);
+        setToHand = true;
         setMeldButtonColor(97.0f, 78.0f, 78.0f);
         update();
     }
@@ -210,14 +239,15 @@ void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
         QApplication::setOverrideCursor(Qt::PointingHandCursor);
     }
     else {
-        QApplication::setOverrideCursor(Qt::ArrowCursor);
+        if (!setToHand)
+            QApplication::setOverrideCursor(Qt::ArrowCursor);
     }
 }
 
 void MainGLWidget::mouseReleaseEvent(QMouseEvent *eventMove) {
     int x = eventMove->pos().x();
     int y = eventMove->pos().y();
-    Position buttonPos = Position::toPx(this->meldingButtonPosition.left, this->meldingButtonPosition.down, this->meldingButtonPosition.top, this->meldingButtonPosition.right, width(), height());
+    Position buttonPos = Position::toPx(MELDING_BUTTON_LEFT, MELDING_BUTTON_DOWN, MELDING_BUTTON_TOP, MELDING_BUTTON_RIGHT, width(), height());
     if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x && this->game.canHumanPlayerMeld()) {
         QApplication::setOverrideCursor(Qt::PointingHandCursor);
         setMeldButtonColor(97.0f, 78.0f, 78.0f);
@@ -233,6 +263,36 @@ void MainGLWidget::setMeldButtonColor(float r, float g, float b) {
     this->meldButtonRcolor = r;
     this->meldButtonGcolor = g;
     this->meldButtonBcolor = b;
+}
+
+void MainGLWidget::drawLeftArrowButton() {
+    if (!leftArrowTextureId) return;
+    glBindTexture(GL_TEXTURE_2D, leftArrowTextureId);
+
+    float left = -ARROW_ALIGNMENT;
+    float right = left + ARROW_SIZE;
+
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex2f(left,  ARROW_Y_DOWN);
+        glTexCoord2f(1, 0); glVertex2f(right, ARROW_Y_DOWN);
+        glTexCoord2f(1, 1); glVertex2f(right, ARROW_Y_TOP);
+        glTexCoord2f(0, 1); glVertex2f(left,  ARROW_Y_TOP);
+    glEnd();
+}
+
+void MainGLWidget::drawRightArrowButton() {
+    if (!rightArrowTextureId) return;
+    glBindTexture(GL_TEXTURE_2D, rightArrowTextureId);
+
+    float right = ARROW_ALIGNMENT;
+    float left = right - ARROW_SIZE;
+
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex2f(left,  ARROW_Y_DOWN);
+        glTexCoord2f(1, 0); glVertex2f(right, ARROW_Y_DOWN);
+        glTexCoord2f(1, 1); glVertex2f(right, ARROW_Y_TOP);
+        glTexCoord2f(0, 1); glVertex2f(left,  ARROW_Y_TOP);
+    glEnd();
 }
 
 
@@ -288,5 +348,7 @@ void MainGLWidget::paintGL()
             card->draw(false, 0);
         }
     }
-    drawButton(this->meldingButtonPosition, "Melduj");
+    drawLeftArrowButton();
+    drawRightArrowButton();
+    drawMeldingButton();
 }

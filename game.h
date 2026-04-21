@@ -18,7 +18,7 @@ class Game
     void generatePlayers();
     void generateDecks();
 public:
-    Game(std::vector<Player> players, std::vector<CardsDeck> decks): players(players), decks(decks), currentPlayerIndex(0), humanPlayerHasDrawnThisTurn(false) {}
+    Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool humanPlayerHasDrawnThisTurn): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), humanPlayerHasDrawnThisTurn(humanPlayerHasDrawnThisTurn) {}
     Game() {}
     void initialize();
     void initializeCardsPositions();
