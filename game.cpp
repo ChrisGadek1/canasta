@@ -20,6 +20,7 @@ std::vector<CardsDeck>& Game::getDecks() {
 
 void Game::initialize() {
     this->currentPlayerIndex = 0;
+    this->humanPlayerCardPage = 0;
     this->humanPlayerHasDrawnThisTurn = false;
     this->generatePlayers();
     this->generateDecks();
@@ -117,7 +118,7 @@ void Game::addMeld(Meld& meld) {
 
 void Game::handleClickOnHiddenDeck() {
     if (currentPlayerIndex != 0) return;
-    if (humanPlayerHasDrawnThisTurn) return;
+    //if (humanPlayerHasDrawnThisTurn) return;
 
     CardsDeck& hiddenDeck = this->getHiddenDeck();
     if (hiddenDeck.getCards().size() > 0) {
@@ -129,6 +130,8 @@ void Game::handleClickOnHiddenDeck() {
             firstCard->behind = lastPlayersCard;
             lastPlayersCard->above = firstCard;
             humanPlayerDeck.addCard(firstCard);
+            // Reset to first page when drawing a new card
+            humanPlayerCardPage = 0;
             initializeCardsPositions();
         }
     }
@@ -165,7 +168,8 @@ bool Game::hasExactlyOneCardSelected() {
     int selectedCount = 0;
     for (auto &deck : this->getDecks()) {
         if (deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() == 0) {
-            for (auto &card : deck.getCards()) {
+            std::vector<Card*> cardsToCheck = this->getVisibleCards(deck.getCards());
+            for (auto &card : cardsToCheck) {
                 if (card->isChosen()) {
                     selectedCount++;
                 }
@@ -182,7 +186,9 @@ void Game::handleClickOnExposedDeck() {
     CardsDeck& humanPlayerDeck = this->getHumanPlayerDeck();
     Card* selectedCard = nullptr;
 
-    for (auto &card : humanPlayerDeck.getCards()) {
+    // Only search in visible cards
+    std::vector<Card*> visibleCards = this->getVisibleCards(humanPlayerDeck.getCards());
+    for (auto &card : visibleCards) {
         if (card->isChosen()) {
             selectedCard = card;
             break;
@@ -208,6 +214,8 @@ void Game::handleClickOnExposedDeck() {
         selectedCard->position = Position(Game::exposedLeftPos, Game::exposedBottomPos, Game::exposedBottomPos + Card::cardHeight, Game::exposedLeftPos + Card::cardHeight * Card::ratio);
 
         exposedDeck.addCard(selectedCard);
+        // Reset to first page when discarding
+        humanPlayerCardPage = 0;
         initializeCardsPositions();
     }
 }
@@ -249,8 +257,14 @@ void Game::initializeMeldCardPositions() {
 bool Game::canPlayerMeld(Player* player) {
     for (auto &deck: this->decks) {
         if (deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() == player->getNumber()) {
-            Meld tempMeld(deck.getCards()[0]->value, *player);
-            for (auto &card: deck.getCards()) {
+            std::vector<Card*> cardsToCheck = deck.getCards();
+            // For human player, only check visible cards
+            if (player->getNumber() == 0) {
+                cardsToCheck = this->getVisibleCards(deck.getCards());
+            }
+            if (cardsToCheck.empty()) return false;
+            Meld tempMeld(cardsToCheck[0]->value, *player);
+            for (auto &card: cardsToCheck) {
                 if (card->isChosen()) {
                     tempMeld.addCard(card);
                 }
@@ -276,10 +290,15 @@ void Game::initializeCardsPositions() {
     for (unsigned short deckI = 0; deckI < this->decks.size(); deckI++) {
         if (this->decks[deckI].getType() == PLAYERS_OWNED) {
             std::vector<Card *> cards = this->decks[deckI].getCards();
+            int playerNum = this->decks[deckI].getPlayer().getNumber();
+
+            // For human player, only position visible cards
+            if (playerNum == 0) {
+                cards = this->getVisibleCards(cards);
+            }
+
             int n = cards.size();
             if (n == 0) continue;
-
-            int playerNum = this->decks[deckI].getPlayer().getNumber();
 
             if (playerNum == 0) {
                 // dół
@@ -361,5 +380,51 @@ void Game::initializeCardsPositions() {
             }
         }
     }
+}
+
+int Game::getTotalPages(const std::vector<Card*>& cards) const {
+    if (cards.empty()) return 0;
+    return (static_cast<int>(cards.size()) + CARDS_PER_PAGE - 1) / CARDS_PER_PAGE;
+}
+
+std::vector<Card*> Game::getVisibleCards(const std::vector<Card*>& allCards) const {
+    std::vector<Card*> visible;
+    if (allCards.size() <= static_cast<size_t>(CARDS_PER_PAGE)) {
+        return allCards;
+    }
+    size_t start = static_cast<size_t>(humanPlayerCardPage) * CARDS_PER_PAGE;
+    size_t end = std::min(start + CARDS_PER_PAGE, allCards.size());
+    for (size_t i = start; i < end; i++) {
+        visible.push_back(allCards[i]);
+    }
+    return visible;
+}
+
+void Game::nextPage() {
+    CardsDeck& humanDeck = getHumanPlayerDeck();
+    int totalPages = getTotalPages(humanDeck.getCards());
+    if (humanPlayerCardPage < totalPages - 1) {
+        humanPlayerCardPage++;
+    }
+}
+
+void Game::previousPage() {
+    if (humanPlayerCardPage > 0) {
+        humanPlayerCardPage--;
+    }
+}
+
+bool Game::shouldShowArrows() const {
+    CardsDeck& humanDeck = const_cast<Game*>(this)->getHumanPlayerDeck();
+    return humanDeck.getCards().size() > static_cast<size_t>(CARDS_PER_PAGE);
+}
+
+bool Game::canGoPrevious() const {
+    return humanPlayerCardPage > 0;
+}
+
+bool Game::canGoNext(const std::vector<Card*>& cards) const {
+    int totalPages = getTotalPages(cards);
+    return humanPlayerCardPage < totalPages - 1;
 }
 

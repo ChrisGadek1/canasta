@@ -101,12 +101,40 @@ void MainGLWidget::resizeGL(int w, int h)
     glLoadIdentity();
 }
 
-void  MainGLWidget::clickOnMeldButton() {
+bool MainGLWidget::shouldShowLeftArrow() const {
+    return game.canGoPrevious();
+}
+
+bool MainGLWidget::shouldShowRightArrow() const {
+    CardsDeck& humanDeck = const_cast<Game&>(game).getHumanPlayerDeck();
+    return game.canGoNext(humanDeck.getCards());
+}
+
+Position MainGLWidget::getLeftArrowPosition() const {
+    return Position::toPx(-ARROW_ALIGNMENT, ARROW_Y_DOWN, ARROW_Y_TOP, -ARROW_ALIGNMENT + ARROW_SIZE, width(), height());
+}
+
+Position MainGLWidget::getRightArrowPosition() const {
+    return Position::toPx(ARROW_ALIGNMENT - ARROW_SIZE, ARROW_Y_DOWN, ARROW_Y_TOP, ARROW_ALIGNMENT, width(), height());
+}
+
+bool MainGLWidget::mouseOverLeftArrow(int x, int y) const {
+    Position pos = getLeftArrowPosition();
+    return pos.down > y && pos.top < y && pos.left < x && pos.right > x;
+}
+
+bool MainGLWidget::mouseOverRightArrow(int x, int y) const {
+    Position pos = getRightArrowPosition();
+    return pos.down > y && pos.top < y && pos.left < x && pos.right > x;
+}
+
+void MainGLWidget::clickOnMeldButton() {
     std::vector<Card*> chosenCards;
     std::vector<CardsDeck*> chosenDecks;
     for(auto &deck: this->game.getDecks()) {
         if(deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() == 0) {
-            for(auto card: deck.getCards()) {
+            std::vector<Card*> cardsToCheck = this->game.getVisibleCards(deck.getCards());
+            for(auto card: cardsToCheck) {
                 if(card->isChosen()) {
                     chosenCards.push_back(card);
                     chosenDecks.push_back(&deck);
@@ -129,6 +157,7 @@ void  MainGLWidget::clickOnMeldButton() {
         }
         this->game.addMeld(meld);
         this->game.initializeMeldCardPositions();
+        this->game.initializeCardsPositions();
         update();
     }
 }
@@ -140,7 +169,13 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     Card* foundTopCard = nullptr;
     for(auto &deck: this->game.getDecks()) {
         if(deck.getType() == PLAYERS_OWNED) {
-            for(auto &card: deck.getCards()) {
+            std::vector<Card*> cardsToCheck;
+            if (deck.getPlayer().getNumber() == 0) {
+                cardsToCheck = this->game.getVisibleCards(deck.getCards());
+            } else {
+                cardsToCheck = deck.getCards();
+            }
+            for(auto &card: cardsToCheck) {
                 Position cardPos = Position::toPx(card->position.left, card->position.down, card->position.top, card->position.right, width(), height());
                 if(cardPos.down > y && cardPos.top < y && cardPos.left < x && cardPos.right > x) {
                     if(deck.getPlayer().getNumber() == 0) {
@@ -165,6 +200,18 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     }
     if (this->game.mouseOverExposedDeck(width(), height(), x, y) && this->game.hasExactlyOneCardSelected()) {
         this->game.handleClickOnExposedDeck();
+    }
+    // Handle left arrow button click (only if visible)
+    if (shouldShowLeftArrow() && mouseOverLeftArrow(x, y)) {
+        this->game.previousPage();
+        this->game.initializeCardsPositions();
+        update();
+    }
+    // Handle right arrow button click (only if visible)
+    if (shouldShowRightArrow() && mouseOverRightArrow(x, y)) {
+        this->game.nextPage();
+        this->game.initializeCardsPositions();
+        update();
     }
 }
 
@@ -232,15 +279,28 @@ void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
         setMeldButtonColor(82.0f, 57.0f, 55.0f);
         update();
     }
-    if (this->game.mouseOverHiddenDeck(width(), height(), x, y) && !this->game.getHiddenDeck().getCards().empty() && !this->game.hasHumanPlayerDrawnThisTurn()) {
+   if (this->game.mouseOverHiddenDeck(width(), height(), x, y) && !this->game.getHiddenDeck().getCards().empty() && !this->game.hasHumanPlayerDrawnThisTurn()) {
         QApplication::setOverrideCursor(Qt::PointingHandCursor);
     }
     else if (this->game.mouseOverExposedDeck(width(), height(), x, y) && this->game.hasExactlyOneCardSelected()) {
         QApplication::setOverrideCursor(Qt::PointingHandCursor);
     }
     else {
-        if (!setToHand)
+        // Check if mouse is over arrow buttons (only if visible)
+        bool overArrow = false;
+        if (shouldShowLeftArrow() && mouseOverLeftArrow(x, y)) {
+            overArrow = true;
+        }
+        else if (shouldShowRightArrow() && mouseOverRightArrow(x, y)) {
+            overArrow = true;
+        }
+
+        if (overArrow) {
+            QApplication::setOverrideCursor(Qt::PointingHandCursor);
+        }
+        else if (!setToHand) {
             QApplication::setOverrideCursor(Qt::ArrowCursor);
+        }
     }
 }
 
@@ -255,6 +315,14 @@ void MainGLWidget::mouseReleaseEvent(QMouseEvent *eventMove) {
     }
     else {
         setMeldButtonColor(82.0f, 57.0f, 55.0f);
+        // Check if mouse is over arrow buttons (only if visible)
+        bool overArrow = (shouldShowLeftArrow() && mouseOverLeftArrow(x, y)) ||
+                         (shouldShowRightArrow() && mouseOverRightArrow(x, y));
+        if (overArrow) {
+            QApplication::setOverrideCursor(Qt::PointingHandCursor);
+        } else {
+            QApplication::setOverrideCursor(Qt::ArrowCursor);
+        }
         update();
     }
 }
@@ -313,7 +381,13 @@ void MainGLWidget::paintGL()
     }
     for(auto &deck: this->game.getDecks()) {
         if(deck.getType() == PLAYERS_OWNED) {
-            for(auto &card: deck.getCards()) {
+            std::vector<Card*> cardsToRender;
+            if (deck.getPlayer().getNumber() == 0) {
+                cardsToRender = this->game.getVisibleCards(deck.getCards());
+            } else {
+                cardsToRender = deck.getCards();
+            }
+            for(auto &card: cardsToRender) {
                 int angle;
                 switch(deck.getPlayer().getNumber()) {
                     case 0:
@@ -348,7 +422,9 @@ void MainGLWidget::paintGL()
             card->draw(false, 0);
         }
     }
-    drawLeftArrowButton();
-    drawRightArrowButton();
+    if (shouldShowLeftArrow())
+        drawLeftArrowButton();
+    if (shouldShowRightArrow())
+        drawRightArrowButton();
     drawMeldingButton();
 }

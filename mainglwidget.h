@@ -43,6 +43,12 @@ private:
     void drawMeldingButton();
     void drawLeftArrowButton();
     void drawRightArrowButton();
+    bool shouldShowLeftArrow() const;
+    bool shouldShowRightArrow() const;
+    Position getLeftArrowPosition() const;
+    Position getRightArrowPosition() const;
+    bool mouseOverLeftArrow(int x, int y) const;
+    bool mouseOverRightArrow(int x, int y) const;
     float meldButtonRcolor = 82.0f;
     float meldButtonGcolor = 57.0f;
     float meldButtonBcolor = 55.0f;
