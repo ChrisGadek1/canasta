@@ -124,3 +124,4 @@ canasta/
 1. Agents should not try to run this game, because it's not a terminal based game
 2. Agents should ALWAYS try to follow existing conventions in the project, regarding variable names, functions, creating logic etc.
 3. After adding changes, agents should ALWAYS get through the changes they made and check if they're meeting requirements and don't need to be refactored
+4. Agents should NOT add unnecessary comments to the code and only add them, when the code is not self-describing, which should be an EXCEPTION

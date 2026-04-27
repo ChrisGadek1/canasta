@@ -118,7 +118,7 @@ void Game::addMeld(Meld& meld) {
 
 void Game::handleClickOnHiddenDeck() {
     if (currentPlayerIndex != 0) return;
-    //if (humanPlayerHasDrawnThisTurn) return;
+    if (humanPlayerHasDrawnThisTurn) return;
 
     CardsDeck& hiddenDeck = this->getHiddenDeck();
     if (hiddenDeck.getCards().size() > 0) {
@@ -130,8 +130,6 @@ void Game::handleClickOnHiddenDeck() {
             firstCard->behind = lastPlayersCard;
             lastPlayersCard->above = firstCard;
             humanPlayerDeck.addCard(firstCard);
-            // Reset to first page when drawing a new card
-            humanPlayerCardPage = 0;
             initializeCardsPositions();
         }
     }
@@ -168,7 +166,8 @@ bool Game::hasExactlyOneCardSelected() {
     int selectedCount = 0;
     for (auto &deck : this->getDecks()) {
         if (deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() == 0) {
-            std::vector<Card*> cardsToCheck = this->getVisibleCards(deck.getCards());
+            // Check all cards (not just visible) to support multi-page selection
+            std::vector<Card*> cardsToCheck = deck.getCards();
             for (auto &card : cardsToCheck) {
                 if (card->isChosen()) {
                     selectedCount++;
@@ -186,9 +185,8 @@ void Game::handleClickOnExposedDeck() {
     CardsDeck& humanPlayerDeck = this->getHumanPlayerDeck();
     Card* selectedCard = nullptr;
 
-    // Only search in visible cards
-    std::vector<Card*> visibleCards = this->getVisibleCards(humanPlayerDeck.getCards());
-    for (auto &card : visibleCards) {
+    std::vector<Card*> allCards = humanPlayerDeck.getCards();
+    for (auto &card : allCards) {
         if (card->isChosen()) {
             selectedCard = card;
             break;
@@ -214,8 +212,11 @@ void Game::handleClickOnExposedDeck() {
         selectedCard->position = Position(Game::exposedLeftPos, Game::exposedBottomPos, Game::exposedBottomPos + Card::cardHeight, Game::exposedLeftPos + Card::cardHeight * Card::ratio);
 
         exposedDeck.addCard(selectedCard);
-        // Reset to first page when discarding
-        humanPlayerCardPage = 0;
+
+        int totalPages = getTotalPages(humanPlayerDeck.getCards());
+        if (humanPlayerCardPage >= totalPages) {
+            humanPlayerCardPage = std::max(0, totalPages - 1);
+        }
         initializeCardsPositions();
     }
 }
@@ -258,10 +259,6 @@ bool Game::canPlayerMeld(Player* player) {
     for (auto &deck: this->decks) {
         if (deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() == player->getNumber()) {
             std::vector<Card*> cardsToCheck = deck.getCards();
-            // For human player, only check visible cards
-            if (player->getNumber() == 0) {
-                cardsToCheck = this->getVisibleCards(deck.getCards());
-            }
             if (cardsToCheck.empty()) return false;
             Meld tempMeld(cardsToCheck[0]->value, *player);
             for (auto &card: cardsToCheck) {
@@ -314,6 +311,10 @@ void Game::initializeCardsPositions() {
                     cards[cardI]->position.setRight(startingX + cardWidth);
                     cards[cardI]->position.setTop(topY);
                     cards[cardI]->position.setDown(bottomY);
+                    if (cards[cardI]->isChosen()) {
+                        cards[cardI]->position.setTop(topY + 0.06f);
+                        cards[cardI]->position.setDown(bottomY + 0.06f);
+                    }
                     startingX += offsetX;
                     if(cardI == 0) {
                         cards[cardI]->above = cards[cardI + 1];

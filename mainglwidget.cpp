@@ -133,7 +133,7 @@ void MainGLWidget::clickOnMeldButton() {
     std::vector<CardsDeck*> chosenDecks;
     for(auto &deck: this->game.getDecks()) {
         if(deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() == 0) {
-            std::vector<Card*> cardsToCheck = this->game.getVisibleCards(deck.getCards());
+            std::vector<Card*> cardsToCheck = deck.getCards();
             for(auto card: cardsToCheck) {
                 if(card->isChosen()) {
                     chosenCards.push_back(card);
