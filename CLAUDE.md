@@ -125,3 +125,4 @@ canasta/
 2. Agents should ALWAYS try to follow existing conventions in the project, regarding variable names, functions, creating logic etc.
 3. After adding changes, agents should ALWAYS get through the changes they made and check if they're meeting requirements and don't need to be refactored
 4. Agents should NOT add unnecessary comments to the code and only add them, when the code is not self-describing, which should be an EXCEPTION
+5. Agents should be as precise as possible - not writing too much in responses to the user and always pointing the most important part of a problem

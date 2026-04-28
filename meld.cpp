@@ -1,19 +1,20 @@
 #include "meld.h"
 #include "cardvalue.h"
 
-CardValue Meld::getValue() {
+CardValue Meld::getValue() const {
     return this->value;
 }
 
 void Meld::addCard(Card* card) {
     this->cards.push_back(card);
+    this->moveMagicCardsToFront();
 }
 
-std::vector<Card*>& Meld::getCards() {
+const std::vector<Card*>& Meld::getCards() const {
     return this->cards;
 }
 
-Player& Meld::getPlayer() {
+const Player& Meld::getPlayer() const {
     return this->player;
 }
 
@@ -72,4 +73,27 @@ bool Meld::magicCardsNotExceedingNonMagicCards() const {
     int magicCardCount = countMagicCards();
     int nonMagicCardCount = static_cast<int>(this->cards.size()) - magicCardCount;
     return magicCardCount <= nonMagicCardCount;
+}
+
+bool Meld::canAddCards(const std::vector<Card*>& cards) const {
+    for (auto& card : cards) {
+        if (!isMagicCard(card->value) && card->value != this->value) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void Meld::moveMagicCardsToFront() {
+    std::vector<Card*> magic;
+    std::vector<Card*> nonMagic;
+    for (auto& card : this->cards) {
+        if (isMagicCard(card->value)) {
+            magic.push_back(card);
+        } else {
+            nonMagic.push_back(card);
+        }
+    }
+    magic.insert(magic.end(), nonMagic.begin(), nonMagic.end());
+    this->cards = magic;
 }

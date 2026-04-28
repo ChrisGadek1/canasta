@@ -149,6 +149,7 @@ void MainGLWidget::clickOnMeldButton() {
         }
     }
     if(chosenCards.size() > 0) {
+        if (this->game.hasMeldWithValue(chosenCards[0]->value)) return;
         Meld meld(chosenCards[0]->value, *currentPlayer);
         for (int i = 0; i < chosenDecks.size(); i++) {
             meld.addCard(chosenCards[i]);
@@ -212,6 +213,14 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
         this->game.nextPage();
         this->game.initializeCardsPositions();
         update();
+    }
+    // Handle click on existing meld to add cards
+    {
+        int meldIndex = -1;
+        if (this->game.mouseOverMeld(width(), height(), x, y, meldIndex) && this->game.canAddCardsToMeld(meldIndex)) {
+            this->game.addCardsToMeld(meldIndex);
+            update();
+        }
     }
 }
 
@@ -299,7 +308,12 @@ void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
             QApplication::setOverrideCursor(Qt::PointingHandCursor);
         }
         else if (!setToHand) {
-            QApplication::setOverrideCursor(Qt::ArrowCursor);
+            int meldIndex = -1;
+            if (this->game.mouseOverMeld(width(), height(), x, y, meldIndex) && this->game.canAddCardsToMeld(meldIndex)) {
+                QApplication::setOverrideCursor(Qt::PointingHandCursor);
+            } else {
+                QApplication::setOverrideCursor(Qt::ArrowCursor);
+            }
         }
     }
 }

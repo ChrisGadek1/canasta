@@ -16,13 +16,15 @@ class Meld
     bool magicCardsNotExceedingNonMagicCards() const;
     bool isMagicCard(CardValue cardValue) const;
     int countMagicCards() const;
+    void moveMagicCardsToFront();
  public:
     Meld(CardValue value, Player player) : value(value), player(player) {}
-    CardValue getValue();
+    CardValue getValue() const;
     void addCard(Card* card);
-    std::vector<Card*>& getCards();
-    Player& getPlayer();
+    const std::vector<Card*>& getCards() const;
+    const Player& getPlayer() const;
     bool valid() const;
+    bool canAddCards(const std::vector<Card*>& cards) const;
 };
 
 #endif // MELD_H

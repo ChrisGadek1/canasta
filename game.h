@@ -28,6 +28,7 @@ public:
     std::vector<Player>& getPlayers();
     std::vector<Meld>& getMelds();
     void addMeld(Meld& meld);
+    bool hasMeldWithValue(CardValue value) const;
     bool canPlayerMeld(Player* player);
     bool canHumanPlayerMeld();
     CardsDeck& getHiddenDeck();
@@ -38,6 +39,9 @@ public:
     bool mouseOverExposedDeck(int vw, int vh, int x, int y);
     bool hasExactlyOneCardSelected();
     void handleClickOnExposedDeck();
+    bool mouseOverMeld(int vw, int vh, int x, int y, int& meldIndex) const;
+    bool canAddCardsToMeld(int meldIndex) const;
+    void addCardsToMeld(int meldIndex);
     Player* getCurrentPlayer() { return &players[currentPlayerIndex]; }
     int getCurrentPlayerIndex() { return currentPlayerIndex; }
     void setCurrentPlayer(int index) { currentPlayerIndex = index; }

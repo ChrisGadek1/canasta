@@ -116,6 +116,13 @@ void Game::addMeld(Meld& meld) {
     this->melds.push_back(meld);
 }
 
+bool Game::hasMeldWithValue(CardValue value) const {
+    for (const auto& meld : melds) {
+        if (meld.getValue() == value) return true;
+    }
+    return false;
+}
+
 void Game::handleClickOnHiddenDeck() {
     if (currentPlayerIndex != 0) return;
     if (humanPlayerHasDrawnThisTurn) return;
@@ -228,26 +235,87 @@ bool Game::mouseOverHiddenDeck(int vw, int vh, int x, int y) {
     return hiddenTopCardPos.down > y && hiddenTopCardPos.top < y && hiddenTopCardPos.right > x && hiddenTopCardPos.left < x;
 }
 
+bool Game::mouseOverMeld(int vw, int vh, int x, int y, int& meldIndex) const {
+    for (size_t i = 0; i < this->melds.size(); i++) {
+        const Meld& meld = this->melds[i];
+        if (meld.getPlayer().getNumber() != 0) continue;
+        for (const auto& card : meld.getCards()) {
+            Position cardPos = Position::toPx(card->position.left, card->position.down, card->position.top, card->position.right, vw, vh);
+            if (cardPos.down > y && cardPos.top < y && cardPos.left < x && cardPos.right > x) {
+                meldIndex = static_cast<int>(i);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool Game::canAddCardsToMeld(int meldIndex) const {
+    if (meldIndex < 0 || meldIndex >= static_cast<int>(this->melds.size())) {
+        return false;
+    }
+    std::vector<Card*> chosenCards;
+    for (auto& deck : this->decks) {
+        if (deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() == 0) {
+            for (auto* card : deck.getCards()) {
+                if (card->isChosen()) {
+                    chosenCards.push_back(card);
+                }
+            }
+        }
+    }
+    return !chosenCards.empty() && this->melds[meldIndex].canAddCards(chosenCards);
+}
+
+void Game::addCardsToMeld(int meldIndex) {
+    std::vector<Card*> chosenCards;
+    std::vector<CardsDeck*> chosenDecks;
+    for (auto& deck : this->decks) {
+        if (deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() == 0) {
+            for (auto* card : deck.getCards()) {
+                if (card->isChosen()) {
+                    chosenCards.push_back(card);
+                    chosenDecks.push_back(&deck);
+                }
+            }
+        }
+    }
+    if (chosenCards.empty() || meldIndex < 0 || meldIndex >= static_cast<int>(this->melds.size())) {
+        return;
+    }
+    Meld& meld = this->melds[meldIndex];
+    if (!meld.canAddCards(chosenCards)) return;
+    for (size_t i = 0; i < chosenDecks.size(); i++) {
+        meld.addCard(chosenCards[i]);
+        std::vector<Card*>& cards = chosenDecks[i]->getCards();
+        cards.erase(std::find(cards.begin(), cards.end(), chosenCards[i]));
+    }
+    initializeMeldCardPositions();
+    initializeCardsPositions();
+}
+
 void Game::initializeMeldCardPositions() {
     float margin = 0.4f;
+    float marginBottom = 0.5f;
     float cardHeight = Card::cardHeight;
     float cardWidth = cardHeight * Card::ratio;
     float leftX = -0.9f + margin;
     float rightX = leftX + cardWidth;
     float offsetX = (2.0 + leftX * 2 - cardWidth) / (this->melds.size() - 1);
 
+    constexpr float meldCardGap = 0.1f;
+
     for (auto &meld : this->melds) {
         Player meldPlayer = meld.getPlayer();
-        float startingY = meldPlayer.getNumber() == 0 || meldPlayer.getNumber() == 2 ? 0 : (1 - margin);
-        float endY = meldPlayer.getNumber() == 0 || meldPlayer.getNumber() == 2 ? - (1 - margin) : 0;
-        float offsetY = (startingY - endY - cardHeight) / std::max(1, int(meld.getCards().size() - 1));
+        float startingY = -1 + cardHeight + marginBottom;
+        float cardStep = meldCardGap;
 
         for(auto &card: meld.getCards()) {
             card->position.setLeft(leftX);
             card->position.setRight(rightX);
             card->position.setDown(startingY - cardHeight);
             card->position.setTop(startingY);
-            startingY -= offsetY;
+            startingY += cardStep;
         }
 
         leftX += offsetX;
@@ -264,6 +332,13 @@ bool Game::canPlayerMeld(Player* player) {
             for (auto &card: cardsToCheck) {
                 if (card->isChosen()) {
                     tempMeld.addCard(card);
+                }
+            }
+            if (tempMeld.valid()) {
+                for (auto &card: cardsToCheck) {
+                    if (card->isChosen()) {
+                        if (hasMeldWithValue(card->value)) return false;
+                    }
                 }
             }
             return tempMeld.valid();

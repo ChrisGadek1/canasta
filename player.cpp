@@ -6,7 +6,7 @@ std::string Player::getName() {
     return this->name;
 }
 
-int Player::getNumber() {
+int Player::getNumber() const {
     return this->number;
 }
 
