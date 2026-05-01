@@ -14,8 +14,17 @@ const std::vector<Card*>& Meld::getCards() const {
     return this->cards;
 }
 
-const Player& Meld::getPlayer() const {
-    return this->player;
+const std::vector<Player>& Meld::getOwners() const {
+    return this->owners;
+}
+
+bool Meld::isOwnedBy(const Player& player) const {
+    for (const auto& owner : this->owners) {
+        if (owner.getNumber() == player.getNumber()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool Meld::valid() const {
@@ -86,7 +95,7 @@ bool Meld::magicCardsNotExceedingNonMagicCards() const {
 }
 
 bool Meld::canAddCards(const std::vector<Card*>& cards) const {
-    Meld tempMeld(this->value, this->player);
+    Meld tempMeld(this->value, this->owners);
     for (auto& card : this->cards) {
         tempMeld.addCard(card);
     }

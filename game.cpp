@@ -125,7 +125,7 @@ bool Game::hasMeldWithValue(CardValue value) const {
 
 void Game::handleClickOnHiddenDeck() {
     if (currentPlayerIndex != 0) return;
-    if (humanPlayerHasDrawnThisTurn) return;
+    //if (humanPlayerHasDrawnThisTurn) return;
 
     CardsDeck& hiddenDeck = this->getHiddenDeck();
     if (hiddenDeck.getCards().size() > 0) {
@@ -238,7 +238,8 @@ bool Game::mouseOverHiddenDeck(int vw, int vh, int x, int y) {
 bool Game::mouseOverMeld(int vw, int vh, int x, int y, int& meldIndex) const {
     for (int i = static_cast<int>(this->melds.size()) - 1; i >= 0; i--) {
         const Meld& meld = this->melds[i];
-        if (meld.getPlayer().getNumber() != 0) continue;
+        Player humanPlayer = this->players[0];
+        if (!meld.isOwnedBy(humanPlayer)) continue;
         std::vector<Card*> cards = meld.getCards();
         for (int ci = static_cast<int>(cards.size()) - 1; ci >= 0; ci--) {
             const auto& card = cards[ci];
@@ -314,7 +315,6 @@ void Game::initializeMeldCardPositions() {
     constexpr float meldCardGap = 0.1f;
 
     for (auto &meld : this->melds) {
-        Player meldPlayer = meld.getPlayer();
         float startingY = -1 + cardHeight + marginBottom;
         float cardStep = meldCardGap;
 
@@ -353,7 +353,9 @@ bool Game::canPlayerMeld(Player* player) {
                 printf("cannot meld - cards to check are empty \n");
             }
             if (cardsToCheck.empty()) return false;
-            Meld tempMeld(cardsToCheck[0]->value, *player);
+            Player opponent = this->players[(player->getNumber() + 2) % 4];
+            std::vector<Player> meldOwners{(*player), opponent};
+            Meld tempMeld(cardsToCheck[0]->value, meldOwners);
             for (auto &card: cardsToCheck) {
                 if (card->isChosen()) {
                     tempMeld.addCard(card);

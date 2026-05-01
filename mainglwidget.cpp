@@ -171,7 +171,9 @@ void MainGLWidget::clickOnMeldButton() {
         auto firstNonMagicCard = std::find_if(chosenCards.begin(), chosenCards.end(), [](const Card* card) {
             return card->value != TWO && card->value != JOKER;
         });
-        Meld meld((*firstNonMagicCard)->value, *currentPlayer);
+        Player opponent = this->game.getPlayers()[(currentPlayer->getNumber() + 2) % 4];
+        std::vector<Player> meldOwners{(*currentPlayer), opponent};
+        Meld meld((*firstNonMagicCard)->value, meldOwners);
         for (int i = 0; i < chosenDecks.size(); i++) {
             meld.addCard(chosenCards[i]);
             std::vector<Card*>& cards = chosenDecks[i]->getCards();
@@ -468,6 +470,15 @@ void MainGLWidget::paintGL()
         }
     }
     for (auto &meld : this->game.getMelds()) {
+        const auto& owners = meld.getOwners();
+        bool ownedBy0or2 = false;
+        for (const auto& owner : owners) {
+            if (owner.getNumber() == 0 || owner.getNumber() == 2) {
+                ownedBy0or2 = true;
+                break;
+            }
+        }
+        if (!ownedBy0or2) continue;
         for(auto &card: meld.getCards()) {
             card->draw(false, 0);
         }
