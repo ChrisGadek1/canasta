@@ -14,7 +14,7 @@
 
 
 MainGLWidget::MainGLWidget(QWidget *parent)
-    : QGLWidget(parent), game(), textureId(0)
+    : QGLWidget(parent), game(), textureId(0), flipTextureId(0)
 {
     this->game.initialize();
 }
@@ -27,6 +27,8 @@ MainGLWidget::~MainGLWidget()
         glDeleteTextures(1, &leftArrowTextureId);
     if (rightArrowTextureId)
         glDeleteTextures(1, &rightArrowTextureId);
+    if (flipTextureId)
+        glDeleteTextures(1, &flipTextureId);
 }
 
 QImage MainGLWidget::loadTexture(const QString &path)
@@ -88,6 +90,17 @@ void MainGLWidget::initializeGL()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
 
+    QImage flipImg = loadTexture(":/images/images/flip.png");
+    if (!flipImg.isNull()) {
+        glGenTextures(1, &flipTextureId);
+        glBindTexture(GL_TEXTURE_2D, flipTextureId);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                     flipImg.width(), flipImg.height(),
+                     0, GL_RGBA, GL_UNSIGNED_BYTE, flipImg.bits());
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    }
+
     setMouseTracking(true);
 }
 
@@ -125,6 +138,11 @@ bool MainGLWidget::mouseOverLeftArrow(int x, int y) const {
 
 bool MainGLWidget::mouseOverRightArrow(int x, int y) const {
     Position pos = getRightArrowPosition();
+    return pos.down > y && pos.top < y && pos.left < x && pos.right > x;
+}
+
+bool MainGLWidget::mouseOverFlipButton(int x, int y) const {
+    Position pos = Position::toPx(FLIP_BUTTON_LEFT, FLIP_BUTTON_DOWN, FLIP_BUTTON_TOP, FLIP_BUTTON_RIGHT, width(), height());
     return pos.down > y && pos.top < y && pos.left < x && pos.right > x;
 }
 
@@ -217,6 +235,10 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
         this->game.initializeCardsPositions();
         update();
     }
+    // Handle flip button click
+    if (mouseOverFlipButton(x, y)) {
+        // Flip action placeholder
+    }
     // Handle click on existing meld to add cards
     {
         int meldIndex = -1;
@@ -298,7 +320,7 @@ void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
         QApplication::setOverrideCursor(Qt::PointingHandCursor);
     }
     else {
-        // Check if mouse is over arrow buttons (only if visible)
+        // Check if mouse is over arrow buttons or flip button
         bool overArrow = false;
         if (shouldShowLeftArrow() && mouseOverLeftArrow(x, y)) {
             overArrow = true;
@@ -307,7 +329,7 @@ void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
             overArrow = true;
         }
 
-        if (overArrow) {
+        if (overArrow || mouseOverFlipButton(x, y)) {
             QApplication::setOverrideCursor(Qt::PointingHandCursor);
         }
         else if (!setToHand) {
@@ -332,10 +354,9 @@ void MainGLWidget::mouseReleaseEvent(QMouseEvent *eventMove) {
     }
     else {
         setMeldButtonColor(82.0f, 57.0f, 55.0f);
-        // Check if mouse is over arrow buttons (only if visible)
         bool overArrow = (shouldShowLeftArrow() && mouseOverLeftArrow(x, y)) ||
                          (shouldShowRightArrow() && mouseOverRightArrow(x, y));
-        if (overArrow) {
+        if (overArrow || mouseOverFlipButton(x, y)) {
             QApplication::setOverrideCursor(Qt::PointingHandCursor);
         } else {
             QApplication::setOverrideCursor(Qt::ArrowCursor);
@@ -377,6 +398,18 @@ void MainGLWidget::drawRightArrowButton() {
         glTexCoord2f(1, 0); glVertex2f(right, ARROW_Y_DOWN);
         glTexCoord2f(1, 1); glVertex2f(right, ARROW_Y_TOP);
         glTexCoord2f(0, 1); glVertex2f(left,  ARROW_Y_TOP);
+    glEnd();
+}
+
+void MainGLWidget::drawFlipButton() {
+    if (!flipTextureId) return;
+    glBindTexture(GL_TEXTURE_2D, flipTextureId);
+
+    glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex2f(FLIP_BUTTON_LEFT,  FLIP_BUTTON_DOWN);
+        glTexCoord2f(1, 0); glVertex2f(FLIP_BUTTON_RIGHT, FLIP_BUTTON_DOWN);
+        glTexCoord2f(1, 1); glVertex2f(FLIP_BUTTON_RIGHT, FLIP_BUTTON_TOP);
+        glTexCoord2f(0, 1); glVertex2f(FLIP_BUTTON_LEFT,  FLIP_BUTTON_TOP);
     glEnd();
 }
 
@@ -443,5 +476,6 @@ void MainGLWidget::paintGL()
         drawLeftArrowButton();
     if (shouldShowRightArrow())
         drawRightArrowButton();
+    drawFlipButton();
     drawMeldingButton();
 }

@@ -13,6 +13,12 @@ static constexpr float ARROW_Y_DOWN = -0.8f;
 static constexpr float ARROW_Y_TOP = -0.7f;
 static constexpr float ARROW_ALIGNMENT = 0.72f;
 
+// Flip button constants
+static constexpr float FLIP_BUTTON_LEFT = 0.78f;
+static constexpr float FLIP_BUTTON_RIGHT = 0.95f;
+static constexpr float FLIP_BUTTON_DOWN = ARROW_Y_DOWN - 0.02;
+static constexpr float FLIP_BUTTON_TOP = ARROW_Y_DOWN + 0.15f;
+
 // Melding button constants
 static constexpr float MELDING_BUTTON_LEFT = 0.75f;
 static constexpr float MELDING_BUTTON_DOWN = -0.95f;
@@ -39,10 +45,13 @@ private:
     GLuint textureId;
     GLuint leftArrowTextureId;
     GLuint rightArrowTextureId;
+    GLuint flipTextureId;
     QImage loadTexture(const QString &path);
     void drawMeldingButton();
     void drawLeftArrowButton();
     void drawRightArrowButton();
+    void drawFlipButton();
+    bool mouseOverFlipButton(int x, int y) const;
     bool shouldShowLeftArrow() const;
     bool shouldShowRightArrow() const;
     Position getLeftArrowPosition() const;
