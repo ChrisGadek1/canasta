@@ -239,7 +239,8 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     }
     // Handle flip button click
     if (mouseOverFlipButton(x, y)) {
-        // Flip action placeholder
+        showOpponentsMelds = !showOpponentsMelds;
+        update();
     }
     // Handle click on existing meld to add cards
     {
@@ -471,14 +472,18 @@ void MainGLWidget::paintGL()
     }
     for (auto &meld : this->game.getMelds()) {
         const auto& owners = meld.getOwners();
-        bool ownedBy0or2 = false;
+        bool ownedByPartner = false;
+        bool ownedByOpponent = false;
         for (const auto& owner : owners) {
-            if (owner.getNumber() == 0 || owner.getNumber() == 2) {
-                ownedBy0or2 = true;
-                break;
-            }
+            int num = owner.getNumber();
+            if (num == 0 || num == 2) ownedByPartner = true;
+            if (num == 1 || num == 3) ownedByOpponent = true;
         }
-        if (!ownedBy0or2) continue;
+        if (showOpponentsMelds) {
+            if (!ownedByOpponent) continue;
+        } else {
+            if (!ownedByPartner) continue;
+        }
         for(auto &card: meld.getCards()) {
             card->draw(false, 0);
         }

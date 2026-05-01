@@ -45,10 +45,14 @@ A 4-player Canasta card game implemented in C++ using Qt5 and OpenGL for renderi
 - Remaining cards form the hidden deck
 
 ### Player Positions
-- **Player 0** (Human): Bottom of screen
-- **Player 1**: Left side
-- **Player 2**: Top
-- **Player 3**: Right side
+- **Player 0** (Human, "Marek"): Bottom of screen
+- **Player 1** ("Jedrek"): Left side
+- **Player 2** ("Andrzej"): Top of screen
+- **Player 3** ("Mariusz"): Right side
+
+### Partnerships
+- **Player 0** and **Player 2** are partners
+- **Player 1** and **Player 3** are partners (opponents of 0 and 2)
 
 ## Key Features
 

@@ -61,6 +61,7 @@ private:
     float meldButtonRcolor = 82.0f;
     float meldButtonGcolor = 57.0f;
     float meldButtonBcolor = 55.0f;
+    bool showOpponentsMelds = false;
     void setMeldButtonColor(float r, float g, float b);
     void clickOnMeldButton();
 };
