@@ -47,6 +47,7 @@ bool Meld::allNonMagicCardsHaveTheSameValue() const {
             if (baseValue == INVALID_CARD_VALUE) {
                 baseValue = card->value;
             } else if (card->value != baseValue) {
+                printf("cannot meld - all non magic cards don't have the same value \n");
                 return false;
             }
         }
@@ -62,24 +63,39 @@ bool Meld::hasAtLeastTwoNonMagicCards() const {
             nonMagicCardCount++;
         }
     }
+    if (nonMagicCardCount < 2) {
+        printf("cannot meld - not enough non magic cards \n");
+    }
     return nonMagicCardCount >= 2;
 }
 
 bool Meld::hasAtLeastThreeTotalCards() const {
+    if (this->cards.size() < 3) {
+        printf("cannot meld - not enough cards \n");
+    }
     return this->cards.size() >= 3;
 }
 
 bool Meld::magicCardsNotExceedingNonMagicCards() const {
     int magicCardCount = countMagicCards();
     int nonMagicCardCount = static_cast<int>(this->cards.size()) - magicCardCount;
+    if (magicCardCount > nonMagicCardCount) {
+        printf("cannot meld - non magic cards not exceeded magic cards number \n");
+    }
     return magicCardCount <= nonMagicCardCount;
 }
 
 bool Meld::canAddCards(const std::vector<Card*>& cards) const {
+    Meld tempMeld(this->value, this->player);
+    for (auto& card : this->cards) {
+        tempMeld.addCard(card);
+    }
     for (auto& card : cards) {
-        if (!isMagicCard(card->value) && card->value != this->value) {
-            return false;
-        }
+        tempMeld.addCard(card);
+    }
+    if (!tempMeld.valid()) {
+        printf("cannot add cards to meld - resulting meld would be invalid\n");
+        return false;
     }
     return true;
 }

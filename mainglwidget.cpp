@@ -150,7 +150,10 @@ void MainGLWidget::clickOnMeldButton() {
     }
     if(chosenCards.size() > 0) {
         if (this->game.hasMeldWithValue(chosenCards[0]->value)) return;
-        Meld meld(chosenCards[0]->value, *currentPlayer);
+        auto firstNonMagicCard = std::find_if(chosenCards.begin(), chosenCards.end(), [](const Card* card) {
+            return card->value != TWO && card->value != JOKER;
+        });
+        Meld meld((*firstNonMagicCard)->value, *currentPlayer);
         for (int i = 0; i < chosenDecks.size(); i++) {
             meld.addCard(chosenCards[i]);
             std::vector<Card*>& cards = chosenDecks[i]->getCards();

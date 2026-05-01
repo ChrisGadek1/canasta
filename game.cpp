@@ -236,13 +236,15 @@ bool Game::mouseOverHiddenDeck(int vw, int vh, int x, int y) {
 }
 
 bool Game::mouseOverMeld(int vw, int vh, int x, int y, int& meldIndex) const {
-    for (size_t i = 0; i < this->melds.size(); i++) {
+    for (int i = static_cast<int>(this->melds.size()) - 1; i >= 0; i--) {
         const Meld& meld = this->melds[i];
         if (meld.getPlayer().getNumber() != 0) continue;
-        for (const auto& card : meld.getCards()) {
+        std::vector<Card*> cards = meld.getCards();
+        for (int ci = static_cast<int>(cards.size()) - 1; ci >= 0; ci--) {
+            const auto& card = cards[ci];
             Position cardPos = Position::toPx(card->position.left, card->position.down, card->position.top, card->position.right, vw, vh);
             if (cardPos.down > y && cardPos.top < y && cardPos.left < x && cardPos.right > x) {
-                meldIndex = static_cast<int>(i);
+                meldIndex = i;
                 return true;
             }
         }
@@ -252,6 +254,7 @@ bool Game::mouseOverMeld(int vw, int vh, int x, int y, int& meldIndex) const {
 
 bool Game::canAddCardsToMeld(int meldIndex) const {
     if (meldIndex < 0 || meldIndex >= static_cast<int>(this->melds.size())) {
+        printf("Cannot add card to meld - bad meldIndex: %d\n", meldIndex);
         return false;
     }
     std::vector<Card*> chosenCards;
@@ -264,6 +267,11 @@ bool Game::canAddCardsToMeld(int meldIndex) const {
             }
         }
     }
+    if (chosenCards.empty()) {
+        printf("Cannot add card to meld - no cards chosen\n");
+        return false;
+    }
+
     return !chosenCards.empty() && this->melds[meldIndex].canAddCards(chosenCards);
 }
 
@@ -310,12 +318,26 @@ void Game::initializeMeldCardPositions() {
         float startingY = -1 + cardHeight + marginBottom;
         float cardStep = meldCardGap;
 
-        for(auto &card: meld.getCards()) {
-            card->position.setLeft(leftX);
-            card->position.setRight(rightX);
-            card->position.setDown(startingY - cardHeight);
-            card->position.setTop(startingY);
+        std::vector<Card*> meldCards = meld.getCards();
+        int n = meldCards.size();
+        for (int cardI = 0; cardI < n; cardI++) {
+            meldCards[cardI]->position.setLeft(leftX);
+            meldCards[cardI]->position.setRight(rightX);
+            meldCards[cardI]->position.setDown(startingY - cardHeight);
+            meldCards[cardI]->position.setTop(startingY);
             startingY += cardStep;
+            if (cardI == 0) {
+                meldCards[cardI]->above = meldCards[cardI + 1];
+                meldCards[cardI]->behind = nullptr;
+            }
+            else if (cardI < n - 1) {
+                meldCards[cardI]->above = meldCards[cardI + 1];
+                meldCards[cardI]->behind = meldCards[cardI - 1];
+            }
+            else {
+                meldCards[cardI]->above = nullptr;
+                meldCards[cardI]->behind = meldCards[cardI - 1];
+            }
         }
 
         leftX += offsetX;
@@ -327,6 +349,9 @@ bool Game::canPlayerMeld(Player* player) {
     for (auto &deck: this->decks) {
         if (deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() == player->getNumber()) {
             std::vector<Card*> cardsToCheck = deck.getCards();
+            if (cardsToCheck.empty()) {
+                printf("cannot meld - cards to check are empty \n");
+            }
             if (cardsToCheck.empty()) return false;
             Meld tempMeld(cardsToCheck[0]->value, *player);
             for (auto &card: cardsToCheck) {
@@ -337,6 +362,9 @@ bool Game::canPlayerMeld(Player* player) {
             if (tempMeld.valid()) {
                 for (auto &card: cardsToCheck) {
                     if (card->isChosen()) {
+                        if ((hasMeldWithValue(card->value))) {
+                            printf("cannot meld - meld with such value already exists\n");
+                        }
                         if (hasMeldWithValue(card->value)) return false;
                     }
                 }
