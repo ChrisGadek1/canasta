@@ -130,3 +130,5 @@ canasta/
 3. After adding changes, agents should ALWAYS get through the changes they made and check if they're meeting requirements and don't need to be refactored
 4. Agents should NOT add unnecessary comments to the code and only add them, when the code is not self-describing, which should be an EXCEPTION
 5. Agents should be as precise as possible - not writing too much in responses to the user and always pointing the most important part of a problem
+6. If a work could be split into smaller tasks, then these tasks should be run by separate agents (using **Agent** tool)
+7. If agent finds it useful, may create a new file for specific functions instead of editing existing

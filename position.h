@@ -10,6 +10,7 @@ public:
     void setDown(float down) { this->down = down; }
     void setTop(float top) { this->top = top; }
     static Position toPx(float left, float down, float top, float right, int vw, int wh);
+    static Position rotateCW90(const Position& pos);
 };
 
 #endif // POSITION_H

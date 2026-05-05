@@ -12,3 +12,7 @@ Position Position::toPx(float left, float down, float top, float right, int vw, 
 
     return Position(l, d, t, r);
 }
+
+Position Position::rotateCW90(const Position& pos) {
+    return Position(pos.down, -pos.right, -pos.left, pos.top);
+}

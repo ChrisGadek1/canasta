@@ -485,7 +485,14 @@ void MainGLWidget::paintGL()
             if (!ownedByPartner) continue;
         }
         for(auto &card: meld.getCards()) {
-            card->draw(false, 0);
+            if (showOpponentsMelds) {
+                Position originalPos = card->position;
+                card->position = Position::rotateCW90(card->position);
+                card->draw(false, 270);
+                card->position = originalPos;
+            } else {
+                card->draw(false, 90);
+            }
         }
     }
     if (shouldShowLeftArrow())
