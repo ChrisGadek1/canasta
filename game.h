@@ -20,7 +20,10 @@ class Game
     void generateDecks();
 public:
     Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool humanPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), humanPlayerHasDrawnThisTurn(humanPlayerHasDrawnThisTurn), humanPlayerCardPage(humanPlayerCardPage) {}
-    Game() : humanPlayerCardPage(0) {}
+    Game() : currentPlayerIndex(0), humanPlayerHasDrawnThisTurn(false), humanPlayerCardPage(0) {}
+    Game(const Game&) = delete;
+    Game& operator=(const Game&) = delete;
+    ~Game();
     void initialize();
     void initializeCardsPositions();
     void initializeMeldCardPositions();
@@ -28,7 +31,7 @@ public:
     std::vector<Player>& getPlayers();
     std::vector<Meld>& getMelds();
     void addMeld(Meld& meld);
-    bool hasMeldWithValue(CardValue value) const;
+    bool hasMeldWithValue(CardValue value, const Player& player) const;
     bool canPlayerMeld(Player* player);
     bool canHumanPlayerMeld();
     CardsDeck& getHiddenDeck();

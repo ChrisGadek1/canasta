@@ -9,6 +9,20 @@
 #include "cardsdeck.h"
 #include "cardsdecktype.h"
 #include <chrono>
+#include <stdexcept>
+
+Game::~Game() {
+    for (auto &deck : this->decks) {
+        for (auto &card : deck.getCards()) {
+            delete card;
+        }
+    }
+    for (auto &meld : this->melds) {
+        for (auto &card : meld.getCards()) {
+            delete card;
+        }
+    }
+}
 
 std::vector<Player>& Game::getPlayers() {
     return this->players;
@@ -44,8 +58,8 @@ void Game::generatePlayers() {
 void Game::generateDecks() {
     std::vector<Card*> initialCards;
 
-    for(int suitId = CardSuit::SPADES; suitId < CardSuit::CLUBS; suitId++) {
-        for (int cardValueId = CardValue::TWO; cardValueId < CardValue::ACE; cardValueId++) {
+    for(int suitId = CardSuit::SPADES; suitId <= CardSuit::CLUBS; suitId++) {
+        for (int cardValueId = CardValue::TWO; cardValueId <= CardValue::ACE; cardValueId++) {
             initialCards.push_back(new Card(static_cast<CardValue>(cardValueId), static_cast<CardSuit>(suitId)));
             initialCards.push_back(new Card(static_cast<CardValue>(cardValueId), static_cast<CardSuit>(suitId)));
         }
@@ -102,10 +116,11 @@ void Game::generateDecks() {
 }
 
 CardsDeck& Game::getHiddenDeck() {
-    auto hiddenDeck = std::find_if(this->getDecks().begin(), this->getDecks().end(), [](CardsDeck deck) { return deck.getType() == HIDDEN; });
+    auto hiddenDeck = std::find_if(this->getDecks().begin(), this->getDecks().end(), [](const CardsDeck& deck) { return deck.getType() == HIDDEN; });
     if (hiddenDeck != this->getDecks().end()) {
         return *hiddenDeck;
     }
+    throw std::logic_error("hidden deck not found");
 }
 
 std::vector<Meld>& Game::getMelds() {
@@ -116,9 +131,9 @@ void Game::addMeld(Meld& meld) {
     this->melds.push_back(meld);
 }
 
-bool Game::hasMeldWithValue(CardValue value) const {
+bool Game::hasMeldWithValue(CardValue value, const Player& player) const {
     for (const auto& meld : melds) {
-        if (meld.getValue() == value) return true;
+        if (meld.getValue() == value && meld.isOwnedBy(player)) return true;
     }
     return false;
 }
@@ -132,15 +147,17 @@ void Game::handleClickOnHiddenDeck() {
         Card* firstCard = hiddenDeck.getCards().back();
         hiddenDeck.getCards().pop_back();
         CardsDeck& humanPlayerDeck = this->getHumanPlayerDeck();
+        firstCard->above = nullptr;
+        firstCard->behind = nullptr;
         if (humanPlayerDeck.getCards().size() > 0) {
             Card* lastPlayersCard = humanPlayerDeck.getCards().back();
             firstCard->behind = lastPlayersCard;
             lastPlayersCard->above = firstCard;
-            humanPlayerDeck.addCard(firstCard);
-            initializeCardsPositions();
         }
+        humanPlayerDeck.addCard(firstCard);
+        initializeCardsPositions();
+        humanPlayerHasDrawnThisTurn = true;
     }
-    humanPlayerHasDrawnThisTurn = true;
 }
 
 void Game::resetHumanPlayerDrawFlag() {
@@ -148,17 +165,19 @@ void Game::resetHumanPlayerDrawFlag() {
 }
 
 CardsDeck& Game::getHumanPlayerDeck() {
-    auto humanPlayerDec = std::find_if(this->getDecks().begin(), this->getDecks().end(), [](CardsDeck deck) { return deck.getType() == PLAYERS_OWNED && deck.getPlayer().getIsHumanControlled(); });
+    auto humanPlayerDec = std::find_if(this->getDecks().begin(), this->getDecks().end(), [](const CardsDeck& deck) { return deck.getType() == PLAYERS_OWNED && deck.getPlayer().getIsHumanControlled(); });
     if (humanPlayerDec != this->getDecks().end()) {
         return *humanPlayerDec;
     }
+    throw std::logic_error("human player deck not found");
 }
 
 CardsDeck& Game::getExposedDeck() {
-    auto exposedDeck = std::find_if(this->getDecks().begin(), this->getDecks().end(), [](CardsDeck deck) { return deck.getType() == EXPOSED; });
+    auto exposedDeck = std::find_if(this->getDecks().begin(), this->getDecks().end(), [](const CardsDeck& deck) { return deck.getType() == EXPOSED; });
     if (exposedDeck != this->getDecks().end()) {
         return *exposedDeck;
     }
+    throw std::logic_error("exposed deck not found");
 }
 
 bool Game::mouseOverExposedDeck(int vw, int vh, int x, int y) {
@@ -230,8 +249,9 @@ void Game::handleClickOnExposedDeck() {
 
 bool Game::mouseOverHiddenDeck(int vw, int vh, int x, int y) {
     CardsDeck& hiddenDeck = this->getHiddenDeck();
-    Card* firstCard = hiddenDeck.getCards()[0];
-    Position hiddenTopCardPos = Position::toPx(firstCard->position.left, firstCard->position.down, firstCard->position.top, firstCard->position.right, vw, vh);
+    if (hiddenDeck.getCards().empty()) return false;
+    Card* topCard = hiddenDeck.getCards().back();
+    Position hiddenTopCardPos = Position::toPx(topCard->position.left, topCard->position.down, topCard->position.top, topCard->position.right, vw, vh);
     return hiddenTopCardPos.down > y && hiddenTopCardPos.top < y && hiddenTopCardPos.right > x && hiddenTopCardPos.left < x;
 }
 
@@ -310,7 +330,7 @@ void Game::initializeMeldCardPositions() {
     float cardWidth = cardHeight * Card::ratio;
     float leftX = -0.9f + margin;
     float rightX = leftX + cardWidth;
-    float offsetX = (2.0 + leftX * 2 - cardWidth) / (this->melds.size() - 1);
+    float offsetX = (2.0 + leftX * 2 - cardWidth) / std::max(1, static_cast<int>(this->melds.size()) - 1);
 
     constexpr float meldCardGap = 0.1f;
 
@@ -326,18 +346,8 @@ void Game::initializeMeldCardPositions() {
             meldCards[cardI]->position.setDown(startingY - cardHeight);
             meldCards[cardI]->position.setTop(startingY);
             startingY += cardStep;
-            if (cardI == 0) {
-                meldCards[cardI]->above = meldCards[cardI + 1];
-                meldCards[cardI]->behind = nullptr;
-            }
-            else if (cardI < n - 1) {
-                meldCards[cardI]->above = meldCards[cardI + 1];
-                meldCards[cardI]->behind = meldCards[cardI - 1];
-            }
-            else {
-                meldCards[cardI]->above = nullptr;
-                meldCards[cardI]->behind = meldCards[cardI - 1];
-            }
+            meldCards[cardI]->above = cardI < n - 1 ? meldCards[cardI + 1] : nullptr;
+            meldCards[cardI]->behind = cardI > 0 ? meldCards[cardI - 1] : nullptr;
         }
 
         leftX += offsetX;
@@ -353,8 +363,8 @@ bool Game::canPlayerMeld(Player* player) {
                 printf("cannot meld - cards to check are empty \n");
             }
             if (cardsToCheck.empty()) return false;
-            Player opponent = this->players[(player->getNumber() + 2) % 4];
-            std::vector<Player> meldOwners{(*player), opponent};
+            Player partner = this->players[(player->getNumber() + 2) % 4];
+            std::vector<Player> meldOwners{(*player), partner};
             Meld tempMeld(cardsToCheck[0]->value, meldOwners);
             for (auto &card: cardsToCheck) {
                 if (card->isChosen()) {
@@ -364,10 +374,10 @@ bool Game::canPlayerMeld(Player* player) {
             if (tempMeld.valid()) {
                 for (auto &card: cardsToCheck) {
                     if (card->isChosen()) {
-                        if ((hasMeldWithValue(card->value))) {
+                        if (hasMeldWithValue(card->value, *player)) {
                             printf("cannot meld - meld with such value already exists\n");
+                            return false;
                         }
-                        if (hasMeldWithValue(card->value)) return false;
                     }
                 }
             }
@@ -421,16 +431,8 @@ void Game::initializeCardsPositions() {
                         cards[cardI]->position.setDown(bottomY + 0.06f);
                     }
                     startingX += offsetX;
-                    if(cardI == 0) {
-                        cards[cardI]->above = cards[cardI + 1];
-                    }
-                    else if(cardI > 0 && cardI < n - 1) {
-                        cards[cardI]->above = cards[cardI + 1];
-                        cards[cardI]->behind = cards[cardI - 1];
-                    }
-                    else {
-                        cards[cardI]->behind = cards[cardI - 1];
-                    }
+                    cards[cardI]->above = cardI < n - 1 ? cards[cardI + 1] : nullptr;
+                    cards[cardI]->behind = cardI > 0 ? cards[cardI - 1] : nullptr;
                 }
             }
             else if (playerNum == 2) {

@@ -2,7 +2,7 @@
 #include <string>
 
 
-std::string Player::getName() {
+std::string Player::getName() const {
     return this->name;
 }
 
@@ -10,6 +10,6 @@ int Player::getNumber() const {
     return this->number;
 }
 
-bool Player::getIsHumanControlled() {
+bool Player::getIsHumanControlled() const {
     return this->isHumanControlled;
 }

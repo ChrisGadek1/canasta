@@ -14,13 +14,14 @@
 
 
 MainGLWidget::MainGLWidget(QWidget *parent)
-    : QGLWidget(parent), game(), textureId(0), flipTextureId(0)
+    : QGLWidget(parent), game(), textureId(0), leftArrowTextureId(0), rightArrowTextureId(0), flipTextureId(0)
 {
     this->game.initialize();
 }
 
 MainGLWidget::~MainGLWidget()
 {
+    makeCurrent();
     if (textureId)
         glDeleteTextures(1, &textureId);
     if (leftArrowTextureId)
@@ -29,6 +30,8 @@ MainGLWidget::~MainGLWidget()
         glDeleteTextures(1, &rightArrowTextureId);
     if (flipTextureId)
         glDeleteTextures(1, &flipTextureId);
+    if (Card::reverseTextureId)
+        glDeleteTextures(1, &Card::reverseTextureId);
 }
 
 QImage MainGLWidget::loadTexture(const QString &path)
@@ -167,12 +170,13 @@ void MainGLWidget::clickOnMeldButton() {
         }
     }
     if(chosenCards.size() > 0) {
-        if (this->game.hasMeldWithValue(chosenCards[0]->value)) return;
         auto firstNonMagicCard = std::find_if(chosenCards.begin(), chosenCards.end(), [](const Card* card) {
             return card->value != TWO && card->value != JOKER;
         });
-        Player opponent = this->game.getPlayers()[(currentPlayer->getNumber() + 2) % 4];
-        std::vector<Player> meldOwners{(*currentPlayer), opponent};
+        if (firstNonMagicCard == chosenCards.end()) return;
+        if (this->game.hasMeldWithValue((*firstNonMagicCard)->value, *currentPlayer)) return;
+        Player partner = this->game.getPlayers()[(currentPlayer->getNumber() + 2) % 4];
+        std::vector<Player> meldOwners{(*currentPlayer), partner};
         Meld meld((*firstNonMagicCard)->value, meldOwners);
         for (int i = 0; i < chosenDecks.size(); i++) {
             meld.addCard(chosenCards[i]);
@@ -245,7 +249,7 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     // Handle click on existing meld to add cards
     {
         int meldIndex = -1;
-        if (this->game.mouseOverMeld(width(), height(), x, y, meldIndex) && this->game.canAddCardsToMeld(meldIndex)) {
+        if (!showOpponentsMelds && this->game.mouseOverMeld(width(), height(), x, y, meldIndex) && this->game.canAddCardsToMeld(meldIndex)) {
             this->game.addCardsToMeld(meldIndex);
             update();
         }
@@ -337,7 +341,7 @@ void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
         }
         else if (!setToHand) {
             int meldIndex = -1;
-            if (this->game.mouseOverMeld(width(), height(), x, y, meldIndex) && this->game.canAddCardsToMeld(meldIndex)) {
+            if (!showOpponentsMelds && this->game.mouseOverMeld(width(), height(), x, y, meldIndex) && this->game.canAddCardsToMeld(meldIndex)) {
                 QApplication::setOverrideCursor(Qt::PointingHandCursor);
             } else {
                 QApplication::setOverrideCursor(Qt::ArrowCursor);
@@ -488,10 +492,10 @@ void MainGLWidget::paintGL()
             if (showOpponentsMelds) {
                 Position originalPos = card->position;
                 card->position = Position::rotateCW90(card->position);
-                card->draw(false, 270);
+                card->draw(false, 90);
                 card->position = originalPos;
             } else {
-                card->draw(false, 90);
+                card->draw(false, 0);
             }
         }
     }

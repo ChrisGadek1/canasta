@@ -12,9 +12,9 @@ class Player
 public:
     Player(bool isHumanControlled, std::string name, int number): isHumanControlled(isHumanControlled), name(name), number(number) {}
     Player(): isHumanControlled(false), name("<placeholder>"), number(-1) {}
-    std::string getName();
+    std::string getName() const;
     int getNumber() const;
-    bool getIsHumanControlled();
+    bool getIsHumanControlled() const;
 };
 
 #endif // PLAYER_H
