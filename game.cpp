@@ -356,21 +356,31 @@ void Game::addCardsToMeld(int meldIndex) {
 }
 
 void Game::initializeMeldCardPositions() {
+    this->initializeTeamMeldCardPositions(this->players[0]);
+    this->initializeTeamMeldCardPositions(this->players[1]);
+}
+
+void Game::initializeTeamMeldCardPositions(const Player& player) {
+    std::vector<Meld*> teamMelds;
+    for (auto &meld : this->melds) {
+        if (meld.isOwnedBy(player)) teamMelds.push_back(&meld);
+    }
+
     float margin = 0.4f;
     float marginBottom = 0.5f;
     float cardHeight = Card::cardHeight;
     float cardWidth = cardHeight * Card::ratio;
     float leftX = -0.9f + margin;
     float rightX = leftX + cardWidth;
-    float offsetX = (2.0 + leftX * 2 - cardWidth) / std::max(1, static_cast<int>(this->melds.size()) - 1);
+    float offsetX = (2.0 + leftX * 2 - cardWidth) / std::max(1, static_cast<int>(teamMelds.size()) - 1);
 
     constexpr float meldCardGap = 0.1f;
 
-    for (auto &meld : this->melds) {
+    for (auto &meld : teamMelds) {
         float startingY = -1 + cardHeight + marginBottom;
         float cardStep = meldCardGap;
 
-        std::vector<Card*> meldCards = meld.getCards();
+        std::vector<Card*> meldCards = meld->getCards();
         int n = meldCards.size();
         for (int cardI = 0; cardI < n; cardI++) {
             meldCards[cardI]->position.setLeft(leftX);

@@ -69,6 +69,11 @@ void MainGLWidget::initializeGL()
             card->loadTexture();
         }
     }
+    for(auto &meld : this->game.getMelds()) {
+        for(auto &card : meld.getCards()) {
+            card->loadTexture();
+        }
+    }
     Card::loadReverseTexture();
 
     QImage leftArrowImg = loadTexture(":/images/images/arrow_left.png");
@@ -475,19 +480,7 @@ void MainGLWidget::paintGL()
         }
     }
     for (auto &meld : this->game.getMelds()) {
-        const auto& owners = meld.getOwners();
-        bool ownedByPartner = false;
-        bool ownedByOpponent = false;
-        for (const auto& owner : owners) {
-            int num = owner.getNumber();
-            if (num == 0 || num == 2) ownedByPartner = true;
-            if (num == 1 || num == 3) ownedByOpponent = true;
-        }
-        if (showOpponentsMelds) {
-            if (!ownedByOpponent) continue;
-        } else {
-            if (!ownedByPartner) continue;
-        }
+        if (meld.isOwnedBy(this->game.getPlayers()[0]) == showOpponentsMelds) continue;
         for(auto &card: meld.getCards()) {
             if (showOpponentsMelds) {
                 Position originalPos = card->position;
