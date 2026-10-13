@@ -25,6 +25,12 @@ static constexpr float MELDING_BUTTON_DOWN = -0.95f;
 static constexpr float MELDING_BUTTON_TOP = -0.85f;
 static constexpr float MELDING_BUTTON_RIGHT = 0.95f;
 
+// Player name label constants
+static constexpr float PLAYER_NAME_BOTTOM_Y = -0.95f;
+static constexpr float PLAYER_NAME_TOP_Y = 0.95f;
+static constexpr float PLAYER_NAME_SIDE_X = 0.75f;
+static constexpr float PLAYER_NAME_SIDE_Y = -0.625f;
+
 class MainGLWidget : public QGLWidget
 {
     Q_OBJECT
@@ -51,6 +57,8 @@ private:
     void drawLeftArrowButton();
     void drawRightArrowButton();
     void drawFlipButton();
+    void drawPlayersNames();
+    void drawCenteredText(const QString& text, float centerX, float centerY, const QFont& font);
     bool mouseOverFlipButton(int x, int y) const;
     bool shouldShowLeftArrow() const;
     bool shouldShowRightArrow() const;

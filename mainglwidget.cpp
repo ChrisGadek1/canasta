@@ -290,23 +290,48 @@ void MainGLWidget::drawMeldingButton() {
     float centerX = (MELDING_BUTTON_LEFT + MELDING_BUTTON_RIGHT) / 2.0f;
     float centerY = (MELDING_BUTTON_DOWN + MELDING_BUTTON_TOP) / 2.0f;
 
+    drawCenteredText(tr("Melduj"), centerX, centerY, QFont("Arial", 14, QFont::Bold));
+}
+
+void MainGLWidget::drawCenteredText(const QString& text, float centerX, float centerY, const QFont& font) {
     int px = static_cast<int>( (centerX + 1.0f) * width()  * 0.5f );
     int py = static_cast<int>( (1.0f - centerY) * height() * 0.5f );
 
-    QFont font("Arial", 14, QFont::Bold);
     QFontMetrics fm(font);
-
-    QString qs = tr("Melduj");
-    int textWidth  = fm.width(qs);
+    int textWidth  = fm.width(text);
 
     int ascent  = fm.ascent();
     int descent = fm.descent();
     int baseline = static_cast<int>(py + (ascent - descent) * 0.5f);
 
-    int tx = px - textWidth / 2;
-    int ty = baseline;
+    renderText(px - textWidth / 2, baseline, text, font);
+}
 
-    renderText(tx, ty, qs, font);
+void MainGLWidget::drawPlayersNames() {
+    glColor3f(1.f, 1.f, 1.f);
+    QFont font("Arial", 14, QFont::Bold);
+    for (auto &player : this->game.getPlayers()) {
+        float centerX, centerY;
+        switch(player.getNumber()) {
+            case 0:
+                centerX = 0.f;
+                centerY = PLAYER_NAME_BOTTOM_Y;
+                break;
+            case 1:
+                centerX = -PLAYER_NAME_SIDE_X;
+                centerY = PLAYER_NAME_SIDE_Y;
+                break;
+            case 2:
+                centerX = 0.f;
+                centerY = PLAYER_NAME_TOP_Y;
+                break;
+            default:
+                centerX = PLAYER_NAME_SIDE_X;
+                centerY = PLAYER_NAME_SIDE_Y;
+                break;
+        }
+        drawCenteredText(QString::fromStdString(player.getName()), centerX, centerY, font);
+    }
 }
 
 void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
@@ -498,4 +523,5 @@ void MainGLWidget::paintGL()
         drawRightArrowButton();
     drawFlipButton();
     drawMeldingButton();
+    drawPlayersNames();
 }
