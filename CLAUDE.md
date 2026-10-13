@@ -41,7 +41,8 @@ A 4-player Canasta card game implemented in C++ using Qt5 and OpenGL for renderi
 - `decks` - order after `generateDecks()`: 4 `PLAYERS_OWNED` hands (players 0-3), then `EXPOSED`, then `HIDDEN`. Decks are looked up with `getHumanPlayerDeck()`, `getExposedDeck()`, `getHiddenDeck()` (`std::find_if` by type, throw `std::logic_error` if missing)
 - `melds` - all melds of both partnerships
 - `currentPlayerIndex` - always 0 at the moment (never advanced)
-- `humanPlayerHasDrawnThisTurn` - set after drawing; the check blocking a second draw is commented out in `handleClickOnHiddenDeck()`
+- `humanPlayerHasDrawnThisTurn` - set after drawing a card other than a red 3 (a drawn red 3 is melded and another card may be drawn); blocks further draws in `handleClickOnHiddenDeck()`
+- `humanPlayerHasDiscardedThisTurn` - set after discarding (never reset yet); `canHumanPlayerDiscard()` allows a discard only after a draw, once, with exactly one card selected
 - `humanPlayerCardPage` - current page of the human hand
 
 ## Game Mechanics
@@ -190,7 +191,7 @@ canasta/
 
 ## Not Implemented Yet
 
-- AI logic, turn rotation (`currentPlayerIndex` stays 0; `resetHumanPlayerDrawFlag()` is never called, so the one-draw-per-turn check in `handleClickOnHiddenDeck()` stays commented out)
+- AI logic, turn rotation (`currentPlayerIndex` stays 0; `resetHumanPlayerDrawFlag()` is never called, so after one draw the human cannot draw again)
 - Scoring, canastas, red-3 handling, picking up the discard pile
 
 ## Important Notes for Development

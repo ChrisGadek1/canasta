@@ -16,6 +16,7 @@ class Game
     std::vector<Meld> melds;
     int currentPlayerIndex;
     bool humanPlayerHasDrawnThisTurn;
+    bool humanPlayerHasDiscardedThisTurn;
     int humanPlayerCardPage;
     void generatePlayers();
     void generateDecks();
@@ -23,8 +24,8 @@ class Game
     Meld& getRedThreesMeld(const Player& player);
     void initializeTeamMeldCardPositions(const Player& player);
 public:
-    Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool humanPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), humanPlayerHasDrawnThisTurn(humanPlayerHasDrawnThisTurn), humanPlayerCardPage(humanPlayerCardPage) {}
-    Game() : currentPlayerIndex(0), humanPlayerHasDrawnThisTurn(false), humanPlayerCardPage(0) {}
+    Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool humanPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), humanPlayerHasDrawnThisTurn(humanPlayerHasDrawnThisTurn), humanPlayerHasDiscardedThisTurn(false), humanPlayerCardPage(humanPlayerCardPage) {}
+    Game() : currentPlayerIndex(0), humanPlayerHasDrawnThisTurn(false), humanPlayerHasDiscardedThisTurn(false), humanPlayerCardPage(0) {}
     Game(const Game&) = delete;
     Game& operator=(const Game&) = delete;
     ~Game();
@@ -45,6 +46,7 @@ public:
     bool mouseOverHiddenDeck(int vw, int vh, int x, int y);
     bool mouseOverExposedDeck(int vw, int vh, int x, int y);
     bool hasExactlyOneCardSelected();
+    bool canHumanPlayerDiscard();
     void handleClickOnExposedDeck();
     bool mouseOverMeld(int vw, int vh, int x, int y, int& meldIndex) const;
     bool canAddCardsToMeld(int meldIndex) const;

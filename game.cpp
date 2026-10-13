@@ -40,6 +40,7 @@ void Game::initialize() {
     this->currentPlayerIndex = 0;
     this->humanPlayerCardPage = 0;
     this->humanPlayerHasDrawnThisTurn = false;
+    this->humanPlayerHasDiscardedThisTurn = false;
     this->generatePlayers();
     this->generateDecks();
     this->meldRedThrees();
@@ -171,7 +172,7 @@ bool Game::hasMeldWithValue(CardValue value, const Player& player) const {
 
 void Game::handleClickOnHiddenDeck() {
     if (currentPlayerIndex != 0) return;
-    //if (humanPlayerHasDrawnThisTurn) return;
+    if (humanPlayerHasDrawnThisTurn) return;
 
     CardsDeck& hiddenDeck = this->getHiddenDeck();
     if (hiddenDeck.getCards().size() > 0) {
@@ -186,9 +187,9 @@ void Game::handleClickOnHiddenDeck() {
             lastPlayersCard->above = firstCard;
         }
         humanPlayerDeck.addCard(firstCard);
+        humanPlayerHasDrawnThisTurn = !firstCard->isRedThree();
         meldRedThrees();
         initializeCardsPositions();
-        humanPlayerHasDrawnThisTurn = true;
     }
 }
 
@@ -236,9 +237,12 @@ bool Game::hasExactlyOneCardSelected() {
     return selectedCount == 1;
 }
 
+bool Game::canHumanPlayerDiscard() {
+    return currentPlayerIndex == 0 && humanPlayerHasDrawnThisTurn && !humanPlayerHasDiscardedThisTurn && hasExactlyOneCardSelected();
+}
+
 void Game::handleClickOnExposedDeck() {
-    if (currentPlayerIndex != 0) return;
-    if (!hasExactlyOneCardSelected()) return;
+    if (!canHumanPlayerDiscard()) return;
 
     CardsDeck& humanPlayerDeck = this->getHumanPlayerDeck();
     Card* selectedCard = nullptr;
@@ -270,6 +274,7 @@ void Game::handleClickOnExposedDeck() {
         selectedCard->position = Position(Game::exposedLeftPos, Game::exposedBottomPos, Game::exposedBottomPos + Card::cardHeight, Game::exposedLeftPos + Card::cardHeight * Card::ratio);
 
         exposedDeck.addCard(selectedCard);
+        humanPlayerHasDiscardedThisTurn = true;
 
         int totalPages = getTotalPages(humanPlayerDeck.getCards());
         if (humanPlayerCardPage >= totalPages) {
