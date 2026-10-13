@@ -29,8 +29,14 @@ add_executable(canasta MACOSX_BUNDLE
     meld.cpp meld.h
     player.cpp player.h
     position.cpp position.h
+    roundresult.h
     ${RESOURCES}
 )
+
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/results.json)
+    configure_file(results.json ${CMAKE_CURRENT_BINARY_DIR}/results.json COPYONLY)
+endif()
+
 target_link_libraries(canasta PRIVATE
     Qt5::Core
     Qt5::Gui

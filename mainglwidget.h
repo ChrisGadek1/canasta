@@ -25,6 +25,12 @@ static constexpr float MELDING_BUTTON_DOWN = -0.95f;
 static constexpr float MELDING_BUTTON_TOP = -0.85f;
 static constexpr float MELDING_BUTTON_RIGHT = 0.95f;
 
+// Points button constants
+static constexpr float POINTS_BUTTON_LEFT = -0.95f;
+static constexpr float POINTS_BUTTON_DOWN = -0.95f;
+static constexpr float POINTS_BUTTON_TOP = -0.85f;
+static constexpr float POINTS_BUTTON_RIGHT = -0.75f;
+
 // Player name label constants
 static constexpr float PLAYER_NAME_BOTTOM_Y = -0.95f;
 static constexpr float PLAYER_NAME_TOP_Y = 0.95f;
@@ -54,12 +60,15 @@ private:
     GLuint flipTextureId;
     QImage loadTexture(const QString &path);
     void drawMeldingButton();
+    void drawPointsButton();
+    void drawButton(float left, float down, float top, float right, float r, float g, float b, const QString& caption);
     void drawLeftArrowButton();
     void drawRightArrowButton();
     void drawFlipButton();
     void drawPlayersNames();
     void drawCenteredText(const QString& text, float centerX, float centerY, const QFont& font);
     bool mouseOverFlipButton(int x, int y) const;
+    bool mouseOverPointsButton(int x, int y) const;
     bool shouldShowLeftArrow() const;
     bool shouldShowRightArrow() const;
     Position getLeftArrowPosition() const;
@@ -72,6 +81,11 @@ private:
     bool showOpponentsMelds = false;
     void setMeldButtonColor(float r, float g, float b);
     void clickOnMeldButton();
+    float pointsButtonRcolor = 82.0f;
+    float pointsButtonGcolor = 57.0f;
+    float pointsButtonBcolor = 55.0f;
+    void setPointsButtonColor(float r, float g, float b);
+    void clickOnPointsButton();
 };
 
 #endif // MAINGLWIDGET_H

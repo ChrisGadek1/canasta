@@ -13,6 +13,23 @@
 
 GLuint Card::reverseTextureId = 0;
 
+const std::unordered_map<CardValue, int, std::hash<int>> Card::pointsByValue = {
+    {CardValue::TWO, 20},
+    {CardValue::THREE, 5},
+    {CardValue::FOUR, 5},
+    {CardValue::FIVE, 5},
+    {CardValue::SIX, 5},
+    {CardValue::SEVEN, 5},
+    {CardValue::EIGHT, 10},
+    {CardValue::NINE, 10},
+    {CardValue::TEN, 10},
+    {CardValue::JACK, 10},
+    {CardValue::QUEEN, 10},
+    {CardValue::KING, 10},
+    {CardValue::ACE, 20},
+    {CardValue::JOKER, 50}
+};
+
 std::string Card::texturePath() const {
     std::string cardValueToInt;
     switch (value) {

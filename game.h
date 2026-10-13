@@ -5,6 +5,7 @@
 #include "player.h"
 #include <vector>
 #include "meld.h"
+#include "roundresult.h"
 
 class Game
 {
@@ -53,6 +54,7 @@ public:
     void setCurrentPlayer(int index) { currentPlayerIndex = index; }
      void resetHumanPlayerDrawFlag();
     bool hasHumanPlayerDrawnThisTurn() const { return humanPlayerHasDrawnThisTurn; }
+    std::vector<RoundResult> loadRoundResults() const;
 
     // Pagination methods
     static constexpr int CARDS_PER_PAGE = 15;

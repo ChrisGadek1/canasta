@@ -6,6 +6,7 @@
 #include "cardvalue.h"
 #include "position.h"
 #include <string>
+#include <unordered_map>
 #include <QtOpenGL>
 
 class Card
@@ -28,6 +29,8 @@ public:
     void draw(bool reverse, float angleDegrees) const;
     static constexpr float ratio = 0.68870523416;
     static constexpr float cardHeight = 0.3;
+    static const std::unordered_map<CardValue, int, std::hash<int>> pointsByValue;
+    int getPoints() const { return pointsByValue.at(value); }
     static void loadReverseTexture();
     void setChosen(int playerNumber);
     bool isChosen();

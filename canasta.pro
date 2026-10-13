@@ -35,11 +35,13 @@ HEADERS  += mainwindow.h \
     cardsdeck.h \
     cardsdecktype.h \
     position.h \
-    meld.h
+    meld.h \
+    roundresult.h
 
 FORMS    += mainwindow.ui
 
 RESOURCES += \
     resources.qrc
 
-DISTFILES +=
+DISTFILES += \
+    results.json

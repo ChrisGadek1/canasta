@@ -6,6 +6,10 @@
 #include "player.h"
 #include <vector>
 #include "game.h"
+#include <QDialog>
+#include <QHeaderView>
+#include <QTableWidget>
+#include <QVBoxLayout>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -154,6 +158,62 @@ bool MainGLWidget::mouseOverFlipButton(int x, int y) const {
     return pos.down > y && pos.top < y && pos.left < x && pos.right > x;
 }
 
+bool MainGLWidget::mouseOverPointsButton(int x, int y) const {
+    Position pos = Position::toPx(POINTS_BUTTON_LEFT, POINTS_BUTTON_DOWN, POINTS_BUTTON_TOP, POINTS_BUTTON_RIGHT, width(), height());
+    return pos.down > y && pos.top < y && pos.left < x && pos.right > x;
+}
+
+void MainGLWidget::clickOnPointsButton() {
+    QDialog pointsDialog(this);
+    pointsDialog.setWindowTitle(tr("Punkty"));
+    pointsDialog.resize(600, 450);
+    QFont pointsFont("Arial", 18);
+
+    std::vector<Player>& players = this->game.getPlayers();
+    std::vector<RoundResult> roundResults = this->game.loadRoundResults();
+    int rowsCount = static_cast<int>(roundResults.size());
+    QTableWidget* pointsTable = new QTableWidget(rowsCount + 1, 2, &pointsDialog);
+    pointsTable->setFont(pointsFont);
+    pointsTable->horizontalHeader()->setFont(pointsFont);
+    pointsTable->verticalHeader()->setFont(pointsFont);
+    pointsTable->setHorizontalHeaderLabels({
+        QString::fromStdString(players[0].getName() + " + " + players[2].getName()),
+        QString::fromStdString(players[1].getName() + " + " + players[3].getName())
+    });
+    pointsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    pointsTable->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    pointsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    QStringList rowLabels;
+    int team02Sum = 0;
+    int team13Sum = 0;
+    for (int i = 0; i < rowsCount; i++) {
+        rowLabels << QString::number(i + 1);
+        pointsTable->setItem(i, 0, new QTableWidgetItem(QString::number(roundResults[i].getTeam02Points())));
+        pointsTable->setItem(i, 1, new QTableWidgetItem(QString::number(roundResults[i].getTeam13Points())));
+        team02Sum += roundResults[i].getTeam02Points();
+        team13Sum += roundResults[i].getTeam13Points();
+    }
+    rowLabels << tr("Suma");
+    pointsTable->setVerticalHeaderLabels(rowLabels);
+
+    QFont sumFont = pointsFont;
+    sumFont.setBold(true);
+    QTableWidgetItem* team02SumItem = new QTableWidgetItem(QString::number(team02Sum));
+    QTableWidgetItem* team13SumItem = new QTableWidgetItem(QString::number(team13Sum));
+    team02SumItem->setFont(sumFont);
+    team13SumItem->setFont(sumFont);
+    pointsTable->setItem(rowsCount, 0, team02SumItem);
+    pointsTable->setItem(rowsCount, 1, team13SumItem);
+
+    QVBoxLayout* layout = new QVBoxLayout(&pointsDialog);
+    layout->addWidget(pointsTable);
+
+    pointsDialog.exec();
+    setPointsButtonColor(82.0f, 57.0f, 55.0f);
+    update();
+}
+
 void MainGLWidget::clickOnMeldButton() {
     std::vector<Card*> chosenCards;
     std::vector<CardsDeck*> chosenDecks;
@@ -228,6 +288,11 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
         update();
         clickOnMeldButton();
     }
+    if (mouseOverPointsButton(x, y)) {
+        setPointsButtonColor(92.0f, 87.0f, 87.0f);
+        update();
+        clickOnPointsButton();
+    }
     if (this->game.mouseOverHiddenDeck(width(), height(), x, y)) {
         this->game.handleClickOnHiddenDeck();
     }
@@ -266,31 +331,41 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
 #include <QString>
 
 void MainGLWidget::drawMeldingButton() {
+    drawButton(MELDING_BUTTON_LEFT, MELDING_BUTTON_DOWN, MELDING_BUTTON_TOP, MELDING_BUTTON_RIGHT,
+               this->meldButtonRcolor, this->meldButtonGcolor, this->meldButtonBcolor, tr("Melduj"));
+}
+
+void MainGLWidget::drawPointsButton() {
+    drawButton(POINTS_BUTTON_LEFT, POINTS_BUTTON_DOWN, POINTS_BUTTON_TOP, POINTS_BUTTON_RIGHT,
+               this->pointsButtonRcolor, this->pointsButtonGcolor, this->pointsButtonBcolor, tr("Punkty"));
+}
+
+void MainGLWidget::drawButton(float left, float down, float top, float right, float r, float g, float b, const QString& caption) {
     glDisable(GL_TEXTURE_2D);
-    glColor3f(this->meldButtonRcolor/255.0f, this->meldButtonGcolor/255.0f, this->meldButtonBcolor/255.0f);
+    glColor3f(r/255.0f, g/255.0f, b/255.0f);
 
     glBegin(GL_QUADS);
-        glVertex2f(MELDING_BUTTON_LEFT,  MELDING_BUTTON_DOWN);
-        glVertex2f(MELDING_BUTTON_RIGHT, MELDING_BUTTON_DOWN);
-        glVertex2f(MELDING_BUTTON_RIGHT, MELDING_BUTTON_TOP);
-        glVertex2f(MELDING_BUTTON_LEFT,  MELDING_BUTTON_TOP);
+        glVertex2f(left,  down);
+        glVertex2f(right, down);
+        glVertex2f(right, top);
+        glVertex2f(left,  top);
     glEnd();
 
     glColor3f(0.f, 0.f, 0.f);
     glBegin(GL_LINE_LOOP);
-        glVertex2f(MELDING_BUTTON_LEFT,  MELDING_BUTTON_DOWN);
-        glVertex2f(MELDING_BUTTON_RIGHT, MELDING_BUTTON_DOWN);
-        glVertex2f(MELDING_BUTTON_RIGHT, MELDING_BUTTON_TOP);
-        glVertex2f(MELDING_BUTTON_LEFT,  MELDING_BUTTON_TOP);
+        glVertex2f(left,  down);
+        glVertex2f(right, down);
+        glVertex2f(right, top);
+        glVertex2f(left,  top);
     glEnd();
 
     glEnable(GL_TEXTURE_2D);
     glColor3f(1.f, 1.f, 1.f);
 
-    float centerX = (MELDING_BUTTON_LEFT + MELDING_BUTTON_RIGHT) / 2.0f;
-    float centerY = (MELDING_BUTTON_DOWN + MELDING_BUTTON_TOP) / 2.0f;
+    float centerX = (left + right) / 2.0f;
+    float centerY = (down + top) / 2.0f;
 
-    drawCenteredText(tr("Melduj"), centerX, centerY, QFont("Arial", 14, QFont::Bold));
+    drawCenteredText(caption, centerX, centerY, QFont("Arial", 14, QFont::Bold));
 }
 
 void MainGLWidget::drawCenteredText(const QString& text, float centerX, float centerY, const QFont& font) {
@@ -350,6 +425,14 @@ void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
         setMeldButtonColor(82.0f, 57.0f, 55.0f);
         update();
     }
+    if (mouseOverPointsButton(x, y)) {
+        QApplication::setOverrideCursor(Qt::PointingHandCursor);
+        setToHand = true;
+        setPointsButtonColor(97.0f, 78.0f, 78.0f);
+    }
+    else {
+        setPointsButtonColor(82.0f, 57.0f, 55.0f);
+    }
    if (this->game.mouseOverHiddenDeck(width(), height(), x, y) && !this->game.getHiddenDeck().getCards().empty() && !this->game.hasHumanPlayerDrawnThisTurn()) {
         QApplication::setOverrideCursor(Qt::PointingHandCursor);
     }
@@ -393,7 +476,7 @@ void MainGLWidget::mouseReleaseEvent(QMouseEvent *eventMove) {
         setMeldButtonColor(82.0f, 57.0f, 55.0f);
         bool overArrow = (shouldShowLeftArrow() && mouseOverLeftArrow(x, y)) ||
                          (shouldShowRightArrow() && mouseOverRightArrow(x, y));
-        if (overArrow || mouseOverFlipButton(x, y)) {
+        if (overArrow || mouseOverFlipButton(x, y) || mouseOverPointsButton(x, y)) {
             QApplication::setOverrideCursor(Qt::PointingHandCursor);
         } else {
             QApplication::setOverrideCursor(Qt::ArrowCursor);
@@ -406,6 +489,12 @@ void MainGLWidget::setMeldButtonColor(float r, float g, float b) {
     this->meldButtonRcolor = r;
     this->meldButtonGcolor = g;
     this->meldButtonBcolor = b;
+}
+
+void MainGLWidget::setPointsButtonColor(float r, float g, float b) {
+    this->pointsButtonRcolor = r;
+    this->pointsButtonGcolor = g;
+    this->pointsButtonBcolor = b;
 }
 
 void MainGLWidget::drawLeftArrowButton() {
@@ -523,5 +612,6 @@ void MainGLWidget::paintGL()
         drawRightArrowButton();
     drawFlipButton();
     drawMeldingButton();
+    drawPointsButton();
     drawPlayersNames();
 }

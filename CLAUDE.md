@@ -116,12 +116,12 @@ Each failing check prints a `printf` debug message.
 | Hidden deck | top-left, right edge `-0.65`, bottom `0.65` |
 | Exposed deck | top-right, left edge `Game::exposedLeftPos = 0.65`, bottom `Game::exposedBottomPos = 0.65` |
 | Melds | columns from x `-0.5`, cards stacked upward from y `-0.5` with `0.1` gap |
-| UI buttons | constants in [`mainglwidget.h`](mainglwidget.h): `MELDING_BUTTON_*` (bottom right), `FLIP_BUTTON_*`, `ARROW_*` |
+| UI buttons | constants in [`mainglwidget.h`](mainglwidget.h): `MELDING_BUTTON_*` (bottom right), `POINTS_BUTTON_*` (bottom left), `FLIP_BUTTON_*`, `ARROW_*`, `PLAYER_NAME_*` |
 
 Call `initializeCardsPositions()` / `initializeMeldCardPositions()` after any change of hand or meld contents, then `update()` on the widget.
 
 ### Paint order ([`MainGLWidget::paintGL()`](mainglwidget.cpp:424))
-Background → decks (hands, exposed, hidden) → melds (own team or opponents, depending on `showOpponentsMelds`) → arrows → flip button → "Melduj" button.
+Background → decks (hands, exposed, hidden) → melds (own team or opponents, depending on `showOpponentsMelds`) → arrows → flip button → "Melduj" button → "Punkty" button → player names. Buttons are drawn with `MainGLWidget::drawButton()`.
 
 ### Input feedback
 `mouseMoveEvent` / `mouseReleaseEvent` change the cursor (`QApplication::setOverrideCursor`) to a pointing hand over interactive elements and change the meld button color (`setMeldButtonColor`, RGB 0-255).
@@ -166,6 +166,8 @@ canasta/
 ├── cardsdeck.*          # Deck management
 ├── meld.*               # Meld handling and validation
 ├── position.*           # Rectangle + coordinate conversion
+├── roundresult.h        # Points of both teams in one round
+├── results.json         # Round results shown in the "Punkty" popup (read by Game::loadRoundResults() from the working directory)
 ├── cardvalue.h          # Card value enum
 ├── cardsuit.h           # Card suit enum
 ├── cardsdecktype.h      # Deck type enum

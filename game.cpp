@@ -10,6 +10,10 @@
 #include "cardsdecktype.h"
 #include <chrono>
 #include <stdexcept>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 Game::~Game() {
     for (auto &deck : this->decks) {
@@ -44,7 +48,7 @@ void Game::initialize() {
 
 void Game::generatePlayers() {
     Player p1(true, "Marek", 0);
-    Player p2(false, "Jedrek", 1);
+    Player p2(false, "Marian", 1);
     Player p3(false, "Andrzej", 2);
     Player p4(false, "Mariusz", 3);
 
@@ -578,3 +582,17 @@ bool Game::canGoNext(const std::vector<Card*>& cards) const {
     return humanPlayerCardPage < totalPages - 1;
 }
 
+std::vector<RoundResult> Game::loadRoundResults() const {
+    std::vector<RoundResult> roundResults;
+    QFile resultsFile("results.json");
+    if (!resultsFile.open(QIODevice::ReadOnly)) {
+        printf("cannot open results.json\n");
+        return roundResults;
+    }
+    QJsonArray rounds = QJsonDocument::fromJson(resultsFile.readAll()).object()["rounds"].toArray();
+    for (const auto& round : rounds) {
+        QJsonObject roundObject = round.toObject();
+        roundResults.push_back(RoundResult(roundObject["team02"].toInt(), roundObject["team13"].toInt()));
+    }
+    return roundResults;
+}
