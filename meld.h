@@ -10,6 +10,7 @@ class Meld
     CardValue value;
     std::vector<Card*> cards;
     std::vector<Player> owners;
+    bool redThrees;
     bool allNonMagicCardsHaveTheSameValue() const;
     bool hasAtLeastTwoNonMagicCards() const;
     bool hasAtLeastThreeTotalCards() const;
@@ -18,7 +19,8 @@ class Meld
     int countMagicCards() const;
     void moveMagicCardsToFront();
  public:
-    Meld(CardValue value, const std::vector<Player>& owners) : value(value), owners(owners) {}
+    Meld(CardValue value, const std::vector<Player>& owners, bool redThrees = false) : value(value), owners(owners), redThrees(redThrees) {}
+    bool isRedThreesMeld() const { return redThrees; }
     CardValue getValue() const;
     void addCard(Card* card);
     const std::vector<Card*>& getCards() const;

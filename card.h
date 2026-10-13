@@ -31,6 +31,7 @@ public:
     static void loadReverseTexture();
     void setChosen(int playerNumber);
     bool isChosen();
+    bool isRedThree() const { return value == CardValue::THREE && (suit == CardSuit::DIAMONDS || suit == CardSuit::HEARTS); }
 
     bool operator==(const Card& b) const {
         if (value != b.value || suit != b.suit) return false;

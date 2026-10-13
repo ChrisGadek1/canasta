@@ -38,6 +38,7 @@ void Game::initialize() {
     this->humanPlayerHasDrawnThisTurn = false;
     this->generatePlayers();
     this->generateDecks();
+    this->meldRedThrees();
     this->initializeCardsPositions();
 }
 
@@ -92,7 +93,7 @@ void Game::generateDecks() {
     Card* initialCard = initialCards.back();
     initialCards.pop_back();
     initialCard->position = Position(Game::exposedLeftPos, Game::exposedBottomPos, Game::exposedBottomPos + Card::cardHeight, Game::exposedLeftPos + Card::cardHeight * Card::ratio);
-    while(initialCard->value == CardValue::THREE && (initialCard->suit == CardSuit::DIAMONDS || initialCard->suit == CardSuit::HEARTS)) {
+    while(initialCard->isRedThree()) {
         exposedDeck.addCard(initialCard);
         initialCard = initialCards.back();
         initialCard->position = Position(Game::exposedLeftPos, Game::exposedBottomPos, Game::exposedBottomPos + Card::cardHeight, Game::exposedLeftPos + Card::cardHeight * Card::ratio);
@@ -115,6 +116,32 @@ void Game::generateDecks() {
     this->decks = decks;
 }
 
+void Game::meldRedThrees() {
+    for (auto &deck : this->decks) {
+        if (deck.getType() != PLAYERS_OWNED) continue;
+        std::vector<Card*>& cards = deck.getCards();
+        for (auto it = cards.begin(); it != cards.end();) {
+            if ((*it)->isRedThree()) {
+                this->getRedThreesMeld(deck.getPlayer()).addCard(*it);
+                it = cards.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+    this->initializeMeldCardPositions();
+}
+
+Meld& Game::getRedThreesMeld(const Player& player) {
+    for (auto &meld : this->melds) {
+        if (meld.isRedThreesMeld() && meld.isOwnedBy(player)) return meld;
+    }
+    Player partner = this->players[(player.getNumber() + 2) % 4];
+    std::vector<Player> meldOwners{player, partner};
+    this->melds.insert(this->melds.begin(), Meld(CardValue::THREE, meldOwners, true));
+    return this->melds.front();
+}
+
 CardsDeck& Game::getHiddenDeck() {
     auto hiddenDeck = std::find_if(this->getDecks().begin(), this->getDecks().end(), [](const CardsDeck& deck) { return deck.getType() == HIDDEN; });
     if (hiddenDeck != this->getDecks().end()) {
@@ -133,7 +160,7 @@ void Game::addMeld(Meld& meld) {
 
 bool Game::hasMeldWithValue(CardValue value, const Player& player) const {
     for (const auto& meld : melds) {
-        if (meld.getValue() == value && meld.isOwnedBy(player)) return true;
+        if (!meld.isRedThreesMeld() && meld.getValue() == value && meld.isOwnedBy(player)) return true;
     }
     return false;
 }
@@ -155,6 +182,7 @@ void Game::handleClickOnHiddenDeck() {
             lastPlayersCard->above = firstCard;
         }
         humanPlayerDeck.addCard(firstCard);
+        meldRedThrees();
         initializeCardsPositions();
         humanPlayerHasDrawnThisTurn = true;
     }
@@ -276,6 +304,10 @@ bool Game::mouseOverMeld(int vw, int vh, int x, int y, int& meldIndex) const {
 bool Game::canAddCardsToMeld(int meldIndex) const {
     if (meldIndex < 0 || meldIndex >= static_cast<int>(this->melds.size())) {
         printf("Cannot add card to meld - bad meldIndex: %d\n", meldIndex);
+        return false;
+    }
+    if (this->melds[meldIndex].isRedThreesMeld()) {
+        printf("Cannot add card to meld - red threes meld\n");
         return false;
     }
     std::vector<Card*> chosenCards;

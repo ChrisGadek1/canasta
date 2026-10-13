@@ -18,6 +18,8 @@ class Game
     int humanPlayerCardPage;
     void generatePlayers();
     void generateDecks();
+    void meldRedThrees();
+    Meld& getRedThreesMeld(const Player& player);
 public:
     Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool humanPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), humanPlayerHasDrawnThisTurn(humanPlayerHasDrawnThisTurn), humanPlayerCardPage(humanPlayerCardPage) {}
     Game() : currentPlayerIndex(0), humanPlayerHasDrawnThisTurn(false), humanPlayerCardPage(0) {}
