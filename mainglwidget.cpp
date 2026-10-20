@@ -229,6 +229,15 @@ void MainGLWidget::showInsufficientInitialMeldsDialog() {
     }
 }
 
+void MainGLWidget::showNoCanastaDialog() {
+    QMessageBox noCanastaDialog(this);
+    noCanastaDialog.setWindowTitle(tr("Koniec gry"));
+    noCanastaDialog.setFont(QFont("Arial", 18));
+    noCanastaDialog.setText(tr("Nie można skończyć gry - brak wyłożonej kanasty"));
+    noCanastaDialog.addButton(tr("Ok"), QMessageBox::AcceptRole);
+    noCanastaDialog.exec();
+}
+
 void MainGLWidget::clickOnMeldButton() {
     std::vector<Card*> chosenCards;
     std::vector<CardsDeck*> chosenDecks;
@@ -301,7 +310,11 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x && this->game.canHumanPlayerMeld()) {
         setMeldButtonColor(92.0f, 87.0f, 87.0f);
         update();
-        clickOnMeldButton();
+        if (this->game.wouldMeldFinishWithoutCanasta()) {
+            showNoCanastaDialog();
+        } else {
+            clickOnMeldButton();
+        }
     }
     if (mouseOverPointsButton(x, y)) {
         setPointsButtonColor(92.0f, 87.0f, 87.0f);
@@ -314,6 +327,8 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     if (this->game.mouseOverExposedDeck(width(), height(), x, y) && (this->game.canHumanPlayerDiscard() || this->game.canHumanPlayerTakeExposedDeck())) {
         if (this->game.canHumanPlayerDiscard() && this->game.hasHumanTeamInsufficientInitialMelds()) {
             showInsufficientInitialMeldsDialog();
+        } else if (this->game.wouldClickOnExposedDeckFinishWithoutCanasta()) {
+            showNoCanastaDialog();
         } else {
             this->game.handleClickOnExposedDeck();
         }
@@ -340,7 +355,11 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     {
         int meldIndex = -1;
         if (!showOpponentsMelds && this->game.mouseOverMeld(width(), height(), x, y, meldIndex) && this->game.canAddCardsToMeld(meldIndex)) {
-            this->game.addCardsToMeld(meldIndex);
+            if (this->game.wouldAddingCardsToMeldFinishWithoutCanasta(meldIndex)) {
+                showNoCanastaDialog();
+            } else {
+                this->game.addCardsToMeld(meldIndex);
+            }
             update();
         }
     }

@@ -20,7 +20,9 @@ class Meld
     void moveMagicCardsToFront();
  public:
     Meld(CardValue value, const std::vector<Player>& owners, bool redThrees = false) : value(value), owners(owners), redThrees(redThrees) {}
+    static constexpr int CANASTA_SIZE = 7;
     bool isRedThreesMeld() const { return redThrees; }
+    bool isCanasta() const { return !redThrees && static_cast<int>(cards.size()) >= CANASTA_SIZE; }
     CardValue getValue() const;
     void addCard(Card* card);
     const std::vector<Card*>& getCards() const;

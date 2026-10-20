@@ -87,6 +87,7 @@ private:
     void setPointsButtonColor(float r, float g, float b);
     void clickOnPointsButton();
     void showInsufficientInitialMeldsDialog();
+    void showNoCanastaDialog();
 };
 
 #endif // MAINGLWIDGET_H

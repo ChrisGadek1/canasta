@@ -328,6 +328,40 @@ bool Game::hasHumanTeamInsufficientInitialMelds() const {
     return !humanTeamHasInitialMeld && points > 0 && points < humanTeamInitialMeldMinimumPoints;
 }
 
+bool Game::hasHumanTeamCanasta() const {
+    return std::any_of(this->melds.begin(), this->melds.end(), [this](const Meld& meld) { return meld.isOwnedBy(this->players[0]) && meld.isCanasta(); });
+}
+
+bool Game::wouldHumanPlayerFinishWithoutCanasta(int remainingCardsCount, int resultingMeldSize) const {
+    return remainingCardsCount == 0 && resultingMeldSize < Meld::CANASTA_SIZE && !hasHumanTeamCanasta();
+}
+
+bool Game::wouldMeldFinishWithoutCanasta() {
+    int handSize = static_cast<int>(this->getHumanPlayerDeck().getCards().size());
+    int chosenCount = static_cast<int>(this->getHumanPlayerChosenCards().size());
+    return wouldHumanPlayerFinishWithoutCanasta(handSize - chosenCount, chosenCount);
+}
+
+bool Game::wouldAddingCardsToMeldFinishWithoutCanasta(int meldIndex) {
+    int handSize = static_cast<int>(this->getHumanPlayerDeck().getCards().size());
+    int chosenCount = static_cast<int>(this->getHumanPlayerChosenCards().size());
+    int meldSize = static_cast<int>(this->melds[meldIndex].getCards().size());
+    return wouldHumanPlayerFinishWithoutCanasta(handSize - chosenCount, meldSize + chosenCount);
+}
+
+bool Game::wouldClickOnExposedDeckFinishWithoutCanasta() {
+    int handSize = static_cast<int>(this->getHumanPlayerDeck().getCards().size());
+    if (canHumanPlayerDiscard()) return wouldHumanPlayerFinishWithoutCanasta(handSize - 1, 0);
+    if (!canHumanPlayerTakeExposedDeck()) return false;
+
+    std::vector<Card*>& exposedCards = this->getExposedDeck().getCards();
+    int pileCardsToHandCount = static_cast<int>(std::count_if(exposedCards.begin(), exposedCards.end() - 1, [](const Card* card) { return !card->isRedThree(); }));
+    int chosenCount = static_cast<int>(this->getHumanPlayerChosenCards().size());
+    Meld* teamMeld = this->findTeamMeld(exposedCards.back()->value, this->players[0]);
+    int meldSize = teamMeld ? static_cast<int>(teamMeld->getCards().size()) : 0;
+    return wouldHumanPlayerFinishWithoutCanasta(handSize - chosenCount + pileCardsToHandCount, meldSize + chosenCount + 1);
+}
+
 void Game::removeHumanTeamMelds() {
     if (humanTeamHasInitialMeld) return;
     CardsDeck& humanPlayerDeck = this->getHumanPlayerDeck();
@@ -352,6 +386,7 @@ bool Game::isExposedDeckFrozen() {
 }
 
 void Game::handleClickOnExposedDeck() {
+    if (wouldClickOnExposedDeckFinishWithoutCanasta()) return;
     if (canHumanPlayerDiscard()) {
         discardChosenCard();
     } else if (canHumanPlayerTakeExposedDeck()) {
@@ -500,6 +535,7 @@ void Game::addCardsToMeld(int meldIndex) {
     if (chosenCards.empty() || meldIndex < 0 || meldIndex >= static_cast<int>(this->melds.size())) {
         return;
     }
+    if (wouldAddingCardsToMeldFinishWithoutCanasta(meldIndex)) return;
     Meld& meld = this->melds[meldIndex];
     if (!meld.canAddCards(chosenCards)) return;
     for (size_t i = 0; i < chosenDecks.size(); i++) {

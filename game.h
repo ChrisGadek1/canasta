@@ -28,6 +28,8 @@ class Game
     Meld* findTeamMeld(CardValue value, const Player& player);
     int calculateInitialMeldMinimumPoints(const Player& player) const;
     int getHumanTeamMeldsPoints() const;
+    bool hasHumanTeamCanasta() const;
+    bool wouldHumanPlayerFinishWithoutCanasta(int remainingCardsCount, int resultingMeldSize) const;
     std::vector<Card*> getHumanPlayerChosenCards();
     static Position exposedDeckPosition(bool rotated = false);
     void discardChosenCard();
@@ -62,6 +64,9 @@ public:
     int getHumanTeamInitialMeldMinimumPoints() const { return humanTeamInitialMeldMinimumPoints; }
     bool hasHumanTeamInsufficientInitialMelds() const;
     void removeHumanTeamMelds();
+    bool wouldMeldFinishWithoutCanasta();
+    bool wouldAddingCardsToMeldFinishWithoutCanasta(int meldIndex);
+    bool wouldClickOnExposedDeckFinishWithoutCanasta();
     void handleClickOnExposedDeck();
     bool mouseOverMeld(int vw, int vh, int x, int y, int& meldIndex) const;
     bool canAddCardsToMeld(int meldIndex) const;
