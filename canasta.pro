@@ -36,7 +36,8 @@ HEADERS  += mainwindow.h \
     cardsdecktype.h \
     position.h \
     meld.h \
-    roundresult.h
+    roundresult.h \
+    teamroundscore.h
 
 FORMS    += mainwindow.ui
 

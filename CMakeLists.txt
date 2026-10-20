@@ -30,6 +30,7 @@ add_executable(canasta MACOSX_BUNDLE
     player.cpp player.h
     position.cpp position.h
     roundresult.h
+    teamroundscore.h
     ${RESOURCES}
 )
 

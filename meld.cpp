@@ -27,7 +27,21 @@ bool Meld::isOwnedBy(const Player& player) const {
     return false;
 }
 
+CardValue Meld::baseValue(const std::vector<Card*>& cards) {
+    for (auto& card : cards) {
+        if (!card->isMagic()) return card->value;
+    }
+    return JOKER;
+}
+
 bool Meld::valid() const {
+    if (!this->cards.empty() && countMagicCards() == static_cast<int>(this->cards.size())) {
+        if (static_cast<int>(this->cards.size()) < CANASTA_SIZE) {
+            printf("cannot meld - magic cards meld must be a complete canasta \n");
+            return false;
+        }
+        return true;
+    }
     return allNonMagicCardsHaveTheSameValue() &&
            hasAtLeastTwoNonMagicCards() &&
            hasAtLeastThreeTotalCards() &&

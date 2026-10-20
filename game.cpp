@@ -16,6 +16,10 @@
 #include <QJsonObject>
 
 Game::~Game() {
+    this->deleteCards();
+}
+
+void Game::deleteCards() {
     for (auto &deck : this->decks) {
         for (auto &card : deck.getCards()) {
             delete card;
@@ -41,6 +45,9 @@ void Game::initialize() {
     this->humanPlayerCardPage = 0;
     this->humanPlayerHasDrawnThisTurn = false;
     this->humanTeamHasInitialMeld = false;
+    this->humanTeamHasMeldedInPreviousTurns = false;
+    this->roundFinishingPlayerNumber = -1;
+    this->roundFinishedConcealed = false;
     this->generatePlayers();
     this->humanTeamInitialMeldMinimumPoints = this->calculateInitialMeldMinimumPoints(this->players[0]);
     this->generateDecks();
@@ -463,7 +470,17 @@ void Game::discardChosenCard() {
 }
 
 void Game::finishCurrentPlayerTurn() {
-    if (getHumanTeamMeldsPoints() > 0) humanTeamHasInitialMeld = true;
+    for (const auto& deck : this->decks) {
+        if (deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() == currentPlayerIndex && deck.getCards().empty()) {
+            roundFinishingPlayerNumber = currentPlayerIndex;
+            roundFinishedConcealed = !humanTeamHasMeldedInPreviousTurns;
+            return;
+        }
+    }
+    if (getHumanTeamMeldsPoints() > 0) {
+        humanTeamHasInitialMeld = true;
+        humanTeamHasMeldedInPreviousTurns = true;
+    }
     // AI players are not implemented yet - their turns are skipped
     do {
         currentPlayerIndex = (currentPlayerIndex + 1) % static_cast<int>(this->players.size());
@@ -629,15 +646,9 @@ bool Game::canPlayerMeld(Player* player) {
                     tempMeld.addCard(card);
                 }
             }
-            if (tempMeld.valid()) {
-                for (auto &card: cardsToCheck) {
-                    if (card->isChosen()) {
-                        if (hasMeldWithValue(card->value, *player)) {
-                            printf("cannot meld - meld with such value already exists\n");
-                            return false;
-                        }
-                    }
-                }
+            if (tempMeld.valid() && hasMeldWithValue(Meld::baseValue(tempMeld.getCards()), *player)) {
+                printf("cannot meld - meld with such value already exists\n");
+                return false;
             }
             return tempMeld.valid();
         }
@@ -810,4 +821,69 @@ std::vector<RoundResult> Game::loadRoundResults() const {
         roundResults.push_back(RoundResult(roundObject["team02"].toInt(), roundObject["team13"].toInt()));
     }
     return roundResults;
+}
+
+TeamRoundScore Game::calculateTeamRoundScore(const Player& player) const {
+    int canastasPoints = 0;
+    int meldedCardsPoints = 0;
+    int redThreesCount = 0;
+    bool hasMelds = false;
+    for (const auto& meld : this->melds) {
+        if (!meld.isOwnedBy(player)) continue;
+        if (meld.isRedThreesMeld()) {
+            redThreesCount += static_cast<int>(meld.getCards().size());
+            continue;
+        }
+        hasMelds = true;
+        meldedCardsPoints += meld.getPoints();
+        if (meld.isCanasta()) {
+            canastasPoints += meld.isMagicCardsCanasta() ? 700 : meld.isNaturalCanasta() ? 500 : 300;
+        }
+    }
+
+    int redThreesPoints = redThreesCount == 4 ? 800 : redThreesCount * 100;
+    if (!hasMelds) redThreesPoints = -redThreesPoints;
+
+    int goingOutPoints = 0;
+    if (isRoundFinished() && roundFinishingPlayerNumber % 2 == player.getNumber() % 2) {
+        goingOutPoints = roundFinishedConcealed ? 200 : 100;
+    }
+
+    int handCardsPoints = 0;
+    for (const auto& deck : this->decks) {
+        if (deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() % 2 == player.getNumber() % 2) {
+            for (const auto* card : deck.getCards()) {
+                handCardsPoints -= card->getPoints();
+            }
+        }
+    }
+    return TeamRoundScore(canastasPoints, redThreesPoints, goingOutPoints, meldedCardsPoints, handCardsPoints);
+}
+
+void Game::saveRoundResult(const RoundResult& roundResult) const {
+    QFile resultsFile("results.json");
+    QJsonObject results;
+    if (resultsFile.open(QIODevice::ReadOnly)) {
+        results = QJsonDocument::fromJson(resultsFile.readAll()).object();
+        resultsFile.close();
+    }
+    QJsonObject round;
+    round["team02"] = roundResult.getTeam02Points();
+    round["team13"] = roundResult.getTeam13Points();
+    QJsonArray rounds = results["rounds"].toArray();
+    rounds.append(round);
+    results["rounds"] = rounds;
+    if (!resultsFile.open(QIODevice::WriteOnly)) {
+        printf("cannot write results.json\n");
+        return;
+    }
+    resultsFile.write(QJsonDocument(results).toJson());
+}
+
+void Game::finishRound() {
+    this->saveRoundResult(RoundResult(this->calculateTeamRoundScore(this->players[0]).getTotalPoints(), this->calculateTeamRoundScore(this->players[1]).getTotalPoints()));
+    this->deleteCards();
+    this->decks.clear();
+    this->melds.clear();
+    this->initialize();
 }

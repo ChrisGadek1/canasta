@@ -59,6 +59,7 @@ private:
     GLuint rightArrowTextureId;
     GLuint flipTextureId;
     QImage loadTexture(const QString &path);
+    void loadCardsTextures();
     void drawMeldingButton();
     void drawPointsButton();
     void drawButton(float left, float down, float top, float right, float r, float g, float b, const QString& caption);
@@ -88,6 +89,8 @@ private:
     void clickOnPointsButton();
     void showInsufficientInitialMeldsDialog();
     void showNoCanastaDialog();
+    void showRoundEndDialog();
+    QStringList getTeamsNames();
 };
 
 #endif // MAINGLWIDGET_H

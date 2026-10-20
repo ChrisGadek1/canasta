@@ -23,6 +23,9 @@ class Meld
     static constexpr int CANASTA_SIZE = 7;
     bool isRedThreesMeld() const { return redThrees; }
     bool isCanasta() const { return !redThrees && static_cast<int>(cards.size()) >= CANASTA_SIZE; }
+    bool isNaturalCanasta() const { return isCanasta() && countMagicCards() == 0; }
+    bool isMagicCardsCanasta() const { return isCanasta() && countMagicCards() == static_cast<int>(cards.size()); }
+    static CardValue baseValue(const std::vector<Card*>& cards);
     CardValue getValue() const;
     void addCard(Card* card);
     const std::vector<Card*>& getCards() const;

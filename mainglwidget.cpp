@@ -40,6 +40,19 @@ MainGLWidget::~MainGLWidget()
         glDeleteTextures(1, &Card::reverseTextureId);
 }
 
+void MainGLWidget::loadCardsTextures() {
+    for(auto &deck : this->game.getDecks()) {
+        for(auto &card : deck.getCards()) {
+            card->loadTexture();
+        }
+    }
+    for(auto &meld : this->game.getMelds()) {
+        for(auto &card : meld.getCards()) {
+            card->loadTexture();
+        }
+    }
+}
+
 QImage MainGLWidget::loadTexture(const QString &path)
 {
     QImage img;
@@ -70,16 +83,7 @@ void MainGLWidget::initializeGL()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
 
-    for(auto &deck : this->game.getDecks()) {
-        for(auto &card : deck.getCards()) {
-            card->loadTexture();
-        }
-    }
-    for(auto &meld : this->game.getMelds()) {
-        for(auto &card : meld.getCards()) {
-            card->loadTexture();
-        }
-    }
+    loadCardsTextures();
     Card::loadReverseTexture();
 
     QImage leftArrowImg = loadTexture(":/images/images/arrow_left.png");
@@ -165,23 +169,68 @@ bool MainGLWidget::mouseOverPointsButton(int x, int y) const {
     return pos.down > y && pos.top < y && pos.left < x && pos.right > x;
 }
 
+QStringList MainGLWidget::getTeamsNames() {
+    std::vector<Player>& players = this->game.getPlayers();
+    return {
+        QString::fromStdString(players[0].getName() + " + " + players[2].getName()),
+        QString::fromStdString(players[1].getName() + " + " + players[3].getName())
+    };
+}
+
+void MainGLWidget::showRoundEndDialog() {
+    QDialog roundEndDialog(this);
+    roundEndDialog.setWindowTitle(tr("Koniec rundy"));
+    roundEndDialog.resize(600, 450);
+    QFont pointsFont("Arial", 18);
+
+    std::vector<Player>& players = this->game.getPlayers();
+    std::vector<TeamRoundScore> teamsScores{this->game.calculateTeamRoundScore(players[0]), this->game.calculateTeamRoundScore(players[1])};
+    QStringList rowLabels{tr("Kanasty"), tr("Czerwone trójki"), tr("Zejście"), tr("Wyłożone karty"), tr("Karty w ręce"), tr("Suma")};
+
+    QTableWidget* scoreTable = new QTableWidget(rowLabels.size(), 2, &roundEndDialog);
+    scoreTable->setFont(pointsFont);
+    scoreTable->horizontalHeader()->setFont(pointsFont);
+    scoreTable->verticalHeader()->setFont(pointsFont);
+    scoreTable->setHorizontalHeaderLabels(getTeamsNames());
+    scoreTable->setVerticalHeaderLabels(rowLabels);
+    scoreTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    scoreTable->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    scoreTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    QFont sumFont = pointsFont;
+    sumFont.setBold(true);
+    for (int team = 0; team < 2; team++) {
+        const TeamRoundScore& score = teamsScores[team];
+        std::vector<int> points{score.getCanastasPoints(), score.getRedThreesPoints(), score.getGoingOutPoints(), score.getMeldedCardsPoints(), score.getHandCardsPoints(), score.getTotalPoints()};
+        for (int row = 0; row < static_cast<int>(points.size()); row++) {
+            scoreTable->setItem(row, team, new QTableWidgetItem(QString::number(points[row])));
+        }
+        scoreTable->item(rowLabels.size() - 1, team)->setFont(sumFont);
+    }
+
+    QVBoxLayout* layout = new QVBoxLayout(&roundEndDialog);
+    layout->addWidget(scoreTable);
+
+    roundEndDialog.exec();
+    makeCurrent();
+    this->game.finishRound();
+    loadCardsTextures();
+    update();
+}
+
 void MainGLWidget::clickOnPointsButton() {
     QDialog pointsDialog(this);
     pointsDialog.setWindowTitle(tr("Punkty"));
     pointsDialog.resize(600, 450);
     QFont pointsFont("Arial", 18);
 
-    std::vector<Player>& players = this->game.getPlayers();
     std::vector<RoundResult> roundResults = this->game.loadRoundResults();
     int rowsCount = static_cast<int>(roundResults.size());
     QTableWidget* pointsTable = new QTableWidget(rowsCount + 1, 2, &pointsDialog);
     pointsTable->setFont(pointsFont);
     pointsTable->horizontalHeader()->setFont(pointsFont);
     pointsTable->verticalHeader()->setFont(pointsFont);
-    pointsTable->setHorizontalHeaderLabels({
-        QString::fromStdString(players[0].getName() + " + " + players[2].getName()),
-        QString::fromStdString(players[1].getName() + " + " + players[3].getName())
-    });
+    pointsTable->setHorizontalHeaderLabels(getTeamsNames());
     pointsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     pointsTable->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     pointsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -259,14 +308,11 @@ void MainGLWidget::clickOnMeldButton() {
         }
     }
     if(chosenCards.size() > 0) {
-        auto firstNonMagicCard = std::find_if(chosenCards.begin(), chosenCards.end(), [](const Card* card) {
-            return card->value != TWO && card->value != JOKER;
-        });
-        if (firstNonMagicCard == chosenCards.end()) return;
-        if (this->game.hasMeldWithValue((*firstNonMagicCard)->value, *currentPlayer)) return;
+        CardValue meldValue = Meld::baseValue(chosenCards);
+        if (this->game.hasMeldWithValue(meldValue, *currentPlayer)) return;
         Player partner = this->game.getPlayers()[(currentPlayer->getNumber() + 2) % 4];
         std::vector<Player> meldOwners{(*currentPlayer), partner};
-        Meld meld((*firstNonMagicCard)->value, meldOwners);
+        Meld meld(meldValue, meldOwners);
         for (int i = 0; i < chosenDecks.size(); i++) {
             chosenCards[i]->resetChosen();
             meld.addCard(chosenCards[i]);
@@ -368,6 +414,10 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
             }
             update();
         }
+    }
+    if (this->game.isRoundFinished()) {
+        update();
+        showRoundEndDialog();
     }
 }
 
