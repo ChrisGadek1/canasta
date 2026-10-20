@@ -34,7 +34,10 @@ public:
     static void loadReverseTexture();
     void setChosen(int playerNumber);
     bool isChosen();
+    bool isMagic() const { return value == CardValue::TWO || value == CardValue::JOKER; }
     bool isRedThree() const { return value == CardValue::THREE && (suit == CardSuit::DIAMONDS || suit == CardSuit::HEARTS); }
+    bool freezesExposedDeck() const { return isMagic() || isRedThree(); }
+    bool isBlackThree() const { return value == CardValue::THREE && (suit == CardSuit::SPADES || suit == CardSuit::CLUBS); }
 
     bool operator==(const Card& b) const {
         if (value != b.value || suit != b.suit) return false;

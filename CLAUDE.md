@@ -52,7 +52,7 @@ A 4-player Canasta card game implemented in C++ using Qt5 and OpenGL for renderi
 
 ### Initial Setup
 - Each player receives 11 cards (dealt round-robin from the back of the shuffled vector)
-- One card goes face-up to the exposed deck; while it is a red 3 (THREE of DIAMONDS/HEARTS), it stays in the exposed deck and another card is put on top
+- One card goes face-up to the exposed deck; while it is a red 3 (THREE of DIAMONDS/HEARTS) or a magic card, it stays in the exposed deck (freezing it) and another card is put on top
 - Remaining cards form the hidden deck
 
 ### Player Positions and Partnerships
@@ -69,7 +69,7 @@ Partner of player `n` is `(n + 2) % 4`.
 1. **Select card** - click a visible own card; `Card::setChosen(0)` toggles `chosen` and shifts it up by `0.06`
 2. **Draw** - click hidden deck → `Game::handleClickOnHiddenDeck()` moves the top card (`back()`) to the human hand
 3. **Discard** - with exactly one selected card, click the exposed deck → `Game::handleClickOnExposedDeck()` → `discardChosenCard()`; an empty exposed deck is clickable at `Game::exposedDeckPosition()`
-3a. **Take exposed deck** - before drawing, click the exposed deck with a non-magic top card and either exactly two selected cards of the same value, or no selected cards and an existing team meld of that value → `takeExposedDeck()`: the top card (+ the pair) go to a new or existing team meld (`getTeamMeld()`), the rest of the pile goes to the hand; counts as the turn's draw
+3a. **Take exposed deck** - before drawing, click the exposed deck with a top card that is neither magic nor a black 3 (stop card) and either exactly two selected cards of the same value, or no selected cards and an existing team meld of that value (not allowed when the deck is frozen - `isExposedDeckFrozen()`, i.e. contains a magic card or a red 3) → `takeExposedDeck()`: the top card (+ the pair) go to a new or existing team meld (`getTeamMeld()`), the rest of the pile goes to the hand; counts as the turn's draw
 4. **Create meld** - "Melduj" button (enabled when `Game::canHumanPlayerMeld()`) → `MainGLWidget::clickOnMeldButton()` creates a `Meld` owned by player 0 and partner 2 from the selected cards
 5. **Add to meld** - click an own-team meld with selected cards → `Game::canAddCardsToMeld()` / `Game::addCardsToMeld()`
 6. **Paginate hand** - arrows shown when hand > `Game::CARDS_PER_PAGE` (15)
@@ -108,6 +108,7 @@ Each failing check prints a `printf` debug message.
 - `Card::cardHeight = 0.3`, `Card::ratio = 0.68870523416` (width = height × ratio)
 - `Card::draw(reverse, angleDegrees)` - draws a textured quad at `position`, rotating **texture coordinates** (not vertices) by the angle; `reverse` uses the shared `Card::reverseTextureId`
 - For side players (1, 3) position rectangles are already horizontal; rotation is applied only to the texture
+- Cards freezing the exposed deck (`Card::freezesExposedDeck()` - magic cards and red 3s) are placed horizontally (`Game::exposedDeckPosition(true)`) and drawn with angle 90, so they stick out from under the pile
 
 ### Layout ([`Game::initializeCardsPositions()`](game.cpp:399), [`Game::initializeMeldCardPositions()`](game.cpp:326))
 | Element | Location |
@@ -193,7 +194,7 @@ canasta/
 ## Not Implemented Yet
 
 - AI logic, turn rotation (`currentPlayerIndex` stays 0; `resetHumanPlayerDrawFlag()` is never called, so after one draw the human cannot draw again)
-- Scoring, canastas, frozen discard pile
+- Scoring, canastas
 
 ## Important Notes for Development
 

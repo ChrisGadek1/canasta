@@ -97,11 +97,11 @@ void Game::generateDecks() {
 
     Card* initialCard = initialCards.back();
     initialCards.pop_back();
-    initialCard->position = exposedDeckPosition();
-    while(initialCard->isRedThree()) {
+    initialCard->position = exposedDeckPosition(initialCard->freezesExposedDeck());
+    while(initialCard->freezesExposedDeck()) {
         exposedDeck.addCard(initialCard);
         initialCard = initialCards.back();
-        initialCard->position = exposedDeckPosition();
+        initialCard->position = exposedDeckPosition(initialCard->freezesExposedDeck());
         initialCards.pop_back();
     }
     exposedDeck.addCard(initialCard);
@@ -167,8 +167,14 @@ std::vector<Card*> Game::getHumanPlayerChosenCards() {
     return chosenCards;
 }
 
-Position Game::exposedDeckPosition() {
-    return Position(Game::exposedLeftPos, Game::exposedBottomPos, Game::exposedBottomPos + Card::cardHeight, Game::exposedLeftPos + Card::cardHeight * Card::ratio);
+Position Game::exposedDeckPosition(bool rotated) {
+    float cardWidth = Card::cardHeight * Card::ratio;
+    if (!rotated) {
+        return Position(Game::exposedLeftPos, Game::exposedBottomPos, Game::exposedBottomPos + Card::cardHeight, Game::exposedLeftPos + cardWidth);
+    }
+    float centerX = Game::exposedLeftPos + cardWidth / 2;
+    float centerY = Game::exposedBottomPos + Card::cardHeight / 2;
+    return Position(centerX - Card::cardHeight / 2, centerY - cardWidth / 2, centerY + cardWidth / 2, centerX + Card::cardHeight / 2);
 }
 
 CardsDeck& Game::getHiddenDeck() {
@@ -270,10 +276,15 @@ bool Game::canHumanPlayerTakeExposedDeck() {
     std::vector<Card*>& exposedCards = this->getExposedDeck().getCards();
     if (exposedCards.empty()) return false;
     CardValue topCardValue = exposedCards.back()->value;
-    if (topCardValue == TWO || topCardValue == JOKER) return false;
+    if (exposedCards.back()->isMagic() || exposedCards.back()->isBlackThree()) return false;
     std::vector<Card*> chosenCards = this->getHumanPlayerChosenCards();
-    if (chosenCards.empty()) return hasMeldWithValue(topCardValue, this->players[0]);
+    if (chosenCards.empty()) return !isExposedDeckFrozen() && hasMeldWithValue(topCardValue, this->players[0]);
     return chosenCards.size() == 2 && std::all_of(chosenCards.begin(), chosenCards.end(), [topCardValue](const Card* card) { return card->value == topCardValue; });
+}
+
+bool Game::isExposedDeckFrozen() {
+    std::vector<Card*>& exposedCards = this->getExposedDeck().getCards();
+    return std::any_of(exposedCards.begin(), exposedCards.end(), [](const Card* card) { return card->freezesExposedDeck(); });
 }
 
 void Game::handleClickOnExposedDeck() {
@@ -339,7 +350,7 @@ void Game::discardChosenCard() {
             selectedCard->above = nullptr;
         }
 
-        selectedCard->position = exposedDeckPosition();
+        selectedCard->position = exposedDeckPosition(selectedCard->freezesExposedDeck());
 
         exposedDeck.addCard(selectedCard);
         humanPlayerHasDiscardedThisTurn = true;

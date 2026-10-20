@@ -585,7 +585,7 @@ void MainGLWidget::paintGL()
         }
         else if (deck.getType() == EXPOSED) {
             for (auto &card: deck.getCards()) {
-                card->draw(false, 0);
+                card->draw(false, card->freezesExposedDeck() ? 90 : 0);
             }
         }
         else {
