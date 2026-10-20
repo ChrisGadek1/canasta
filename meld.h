@@ -15,6 +15,7 @@ class Meld
     bool hasAtLeastTwoNonMagicCards() const;
     bool hasAtLeastThreeTotalCards() const;
     bool magicCardsNotExceedingNonMagicCards() const;
+    bool hasNoBlackThrees() const;
     bool isMagicCard(CardValue cardValue) const;
     int countMagicCards() const;
     void moveMagicCardsToFront();

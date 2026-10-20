@@ -84,6 +84,7 @@ All actions only work when `currentPlayerIndex == 0`. Selection state spans all 
 2. **At least 2 non-magic cards** (`hasAtLeastTwoNonMagicCards`)
 3. **At least 3 total cards** (`hasAtLeastThreeTotalCards`)
 4. **Magic cards not exceeding non-magic cards** (`magicCardsNotExceedingNonMagicCards`)
+5. **No black 3s** (`hasNoBlackThrees`) - black 3s can never be melded; a player has to discard them to empty the hand
 
 Each failing check prints a `printf` debug message.
 

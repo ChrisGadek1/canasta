@@ -42,7 +42,8 @@ bool Meld::valid() const {
         }
         return true;
     }
-    return allNonMagicCardsHaveTheSameValue() &&
+    return hasNoBlackThrees() &&
+           allNonMagicCardsHaveTheSameValue() &&
            hasAtLeastTwoNonMagicCards() &&
            hasAtLeastThreeTotalCards() &&
            magicCardsNotExceedingNonMagicCards();
@@ -106,6 +107,16 @@ bool Meld::magicCardsNotExceedingNonMagicCards() const {
         printf("cannot meld - non magic cards not exceeded magic cards number \n");
     }
     return magicCardCount <= nonMagicCardCount;
+}
+
+bool Meld::hasNoBlackThrees() const {
+    for (auto& card : this->cards) {
+        if (card->isBlackThree()) {
+            printf("cannot meld - black threes cannot be melded \n");
+            return false;
+        }
+    }
+    return true;
 }
 
 bool Meld::canAddCards(const std::vector<Card*>& cards) const {
