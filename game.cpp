@@ -311,6 +311,7 @@ bool Game::mouseOverMeld(int vw, int vh, int x, int y, int& meldIndex) const {
 }
 
 bool Game::canAddCardsToMeld(int meldIndex) const {
+    if (!humanPlayerHasDrawnThisTurn) return false;
     if (meldIndex < 0 || meldIndex >= static_cast<int>(this->melds.size())) {
         printf("Cannot add card to meld - bad meldIndex: %d\n", meldIndex);
         return false;
@@ -439,6 +440,7 @@ bool Game::canPlayerMeld(Player* player) {
 }
 
 bool Game::canHumanPlayerMeld() {
+    if (!humanPlayerHasDrawnThisTurn) return false;
     auto it = std::find_if(players.begin(), players.end(),[](Player& p){ return p.getNumber() == 0; });
     if (it != players.end()) {
         Player& currentPlayerRef = *it;
