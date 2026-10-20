@@ -41,7 +41,9 @@ void Game::initialize() {
     this->humanPlayerCardPage = 0;
     this->humanPlayerHasDrawnThisTurn = false;
     this->humanPlayerHasDiscardedThisTurn = false;
+    this->humanTeamHasInitialMeld = false;
     this->generatePlayers();
+    this->humanTeamInitialMeldMinimumPoints = this->calculateInitialMeldMinimumPoints(this->players[0]);
     this->generateDecks();
     this->meldRedThrees();
     this->initializeCardsPositions();
@@ -147,10 +149,16 @@ Meld& Game::getRedThreesMeld(const Player& player) {
     return this->melds.front();
 }
 
-Meld& Game::getTeamMeld(CardValue value, const Player& player) {
+Meld* Game::findTeamMeld(CardValue value, const Player& player) {
     for (auto &meld : this->melds) {
-        if (!meld.isRedThreesMeld() && meld.getValue() == value && meld.isOwnedBy(player)) return meld;
+        if (!meld.isRedThreesMeld() && meld.getValue() == value && meld.isOwnedBy(player)) return &meld;
     }
+    return nullptr;
+}
+
+Meld& Game::getTeamMeld(CardValue value, const Player& player) {
+    Meld* teamMeld = this->findTeamMeld(value, player);
+    if (teamMeld) return *teamMeld;
     Player partner = this->players[(player.getNumber() + 2) % 4];
     std::vector<Player> meldOwners{player, partner};
     this->melds.push_back(Meld(value, meldOwners));
@@ -275,11 +283,67 @@ bool Game::canHumanPlayerTakeExposedDeck() {
     if (currentPlayerIndex != 0 || humanPlayerHasDrawnThisTurn) return false;
     std::vector<Card*>& exposedCards = this->getExposedDeck().getCards();
     if (exposedCards.empty()) return false;
-    CardValue topCardValue = exposedCards.back()->value;
-    if (exposedCards.back()->isMagic() || exposedCards.back()->isBlackThree()) return false;
+    Card* topCard = exposedCards.back();
+    if (topCard->isMagic() || topCard->isBlackThree()) return false;
+    Meld* teamMeld = this->findTeamMeld(topCard->value, this->players[0]);
     std::vector<Card*> chosenCards = this->getHumanPlayerChosenCards();
-    if (chosenCards.empty()) return !isExposedDeckFrozen() && hasMeldWithValue(topCardValue, this->players[0]);
-    return chosenCards.size() == 2 && std::all_of(chosenCards.begin(), chosenCards.end(), [topCardValue](const Card* card) { return card->value == topCardValue; });
+    if (chosenCards.empty()) return !isExposedDeckFrozen() && teamMeld != nullptr;
+    long matchingCardsCount = std::count_if(chosenCards.begin(), chosenCards.end(), [topCard](const Card* card) { return card->value == topCard->value; });
+    if (matchingCardsCount < 2) return false;
+    chosenCards.push_back(topCard);
+    if (teamMeld) return teamMeld->canAddCards(chosenCards);
+
+    Player partner = this->players[2];
+    std::vector<Player> meldOwners{this->players[0], partner};
+    Meld newMeld(topCard->value, meldOwners);
+    for (auto* card : chosenCards) {
+        newMeld.addCard(card);
+    }
+    return newMeld.valid() && (humanTeamHasInitialMeld || newMeld.getPoints() >= humanTeamInitialMeldMinimumPoints);
+}
+
+int Game::calculateInitialMeldMinimumPoints(const Player& player) const {
+    int teamPoints = 0;
+    for (const auto& roundResult : this->loadRoundResults()) {
+        teamPoints += player.getNumber() % 2 == 0 ? roundResult.getTeam02Points() : roundResult.getTeam13Points();
+    }
+    if (teamPoints < 0) return 15;
+    if (teamPoints < 1500) return 50;
+    if (teamPoints < 3000) return 90;
+    return 120;
+}
+
+int Game::getHumanTeamMeldsPoints() const {
+    int points = 0;
+    for (const auto& meld : this->melds) {
+        if (!meld.isRedThreesMeld() && meld.isOwnedBy(this->players[0])) {
+            points += meld.getPoints();
+        }
+    }
+    return points;
+}
+
+bool Game::hasHumanTeamInsufficientInitialMelds() const {
+    int points = this->getHumanTeamMeldsPoints();
+    return !humanTeamHasInitialMeld && points > 0 && points < humanTeamInitialMeldMinimumPoints;
+}
+
+void Game::removeHumanTeamMelds() {
+    if (humanTeamHasInitialMeld) return;
+    CardsDeck& humanPlayerDeck = this->getHumanPlayerDeck();
+    for (auto it = this->melds.begin(); it != this->melds.end();) {
+        if (!it->isRedThreesMeld() && it->isOwnedBy(this->players[0])) {
+            for (auto* card : it->getCards()) {
+                if (card->isChosen()) card->setChosen(0);
+                humanPlayerDeck.addCard(card);
+            }
+            it = this->melds.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    initializeMeldCardPositions();
+    initializeCardsPositions();
 }
 
 bool Game::isExposedDeckFrozen() {
@@ -317,11 +381,13 @@ void Game::takeExposedDeck() {
     exposedCards.clear();
 
     humanPlayerHasDrawnThisTurn = true;
+    humanTeamHasInitialMeld = true;
     meldRedThrees();
     initializeCardsPositions();
 }
 
 void Game::discardChosenCard() {
+    if (hasHumanTeamInsufficientInitialMelds()) return;
 
     CardsDeck& humanPlayerDeck = this->getHumanPlayerDeck();
     Card* selectedCard = nullptr;
@@ -354,6 +420,7 @@ void Game::discardChosenCard() {
 
         exposedDeck.addCard(selectedCard);
         humanPlayerHasDiscardedThisTurn = true;
+        if (getHumanTeamMeldsPoints() > 0) humanTeamHasInitialMeld = true;
 
         int totalPages = getTotalPages(humanPlayerDeck.getCards());
         if (humanPlayerCardPage >= totalPages) {

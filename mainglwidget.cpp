@@ -8,6 +8,8 @@
 #include "game.h"
 #include <QDialog>
 #include <QHeaderView>
+#include <QMessageBox>
+#include <QPushButton>
 #include <QTableWidget>
 #include <QVBoxLayout>
 
@@ -214,6 +216,19 @@ void MainGLWidget::clickOnPointsButton() {
     update();
 }
 
+void MainGLWidget::showInsufficientInitialMeldsDialog() {
+    QMessageBox insufficientMeldsDialog(this);
+    insufficientMeldsDialog.setWindowTitle(tr("Wyłożenie się"));
+    insufficientMeldsDialog.setFont(QFont("Arial", 18));
+    insufficientMeldsDialog.setText(tr("Wyłożone ogony nie posiadają wymaganej ilości punktów (%1) do wyłożenia się.").arg(this->game.getHumanTeamInitialMeldMinimumPoints()));
+    QPushButton* removeMeldsButton = insufficientMeldsDialog.addButton(tr("Usuń ogony"), QMessageBox::AcceptRole);
+    insufficientMeldsDialog.addButton(tr("Anuluj"), QMessageBox::RejectRole);
+    insufficientMeldsDialog.exec();
+    if (insufficientMeldsDialog.clickedButton() == removeMeldsButton) {
+        this->game.removeHumanTeamMelds();
+    }
+}
+
 void MainGLWidget::clickOnMeldButton() {
     std::vector<Card*> chosenCards;
     std::vector<CardsDeck*> chosenDecks;
@@ -297,7 +312,11 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
         this->game.handleClickOnHiddenDeck();
     }
     if (this->game.mouseOverExposedDeck(width(), height(), x, y) && (this->game.canHumanPlayerDiscard() || this->game.canHumanPlayerTakeExposedDeck())) {
-        this->game.handleClickOnExposedDeck();
+        if (this->game.canHumanPlayerDiscard() && this->game.hasHumanTeamInsufficientInitialMelds()) {
+            showInsufficientInitialMeldsDialog();
+        } else {
+            this->game.handleClickOnExposedDeck();
+        }
         update();
     }
     // Handle left arrow button click (only if visible)

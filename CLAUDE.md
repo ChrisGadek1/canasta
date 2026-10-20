@@ -69,7 +69,7 @@ Partner of player `n` is `(n + 2) % 4`.
 1. **Select card** - click a visible own card; `Card::setChosen(0)` toggles `chosen` and shifts it up by `0.06`
 2. **Draw** - click hidden deck → `Game::handleClickOnHiddenDeck()` moves the top card (`back()`) to the human hand
 3. **Discard** - with exactly one selected card, click the exposed deck → `Game::handleClickOnExposedDeck()` → `discardChosenCard()`; an empty exposed deck is clickable at `Game::exposedDeckPosition()`
-3a. **Take exposed deck** - before drawing, click the exposed deck with a top card that is neither magic nor a black 3 (stop card) and either exactly two selected cards of the same value, or no selected cards and an existing team meld of that value (not allowed when the deck is frozen - `isExposedDeckFrozen()`, i.e. contains a magic card or a red 3) → `takeExposedDeck()`: the top card (+ the pair) go to a new or existing team meld (`getTeamMeld()`), the rest of the pile goes to the hand; counts as the turn's draw
+3a. **Take exposed deck** - before drawing, click the exposed deck with a top card that is neither magic nor a black 3 (stop card) and either selected cards that contain at least two naturals of the top card's value and form a valid meld with it (a new meld must reach the initial meld minimum if the team has no initial meld yet), or no selected cards and an existing team meld of that value (not allowed when the deck is frozen - `isExposedDeckFrozen()`, i.e. contains a magic card or a red 3) → `takeExposedDeck()`: the top card (+ the pair) go to a new or existing team meld (`getTeamMeld()`), the rest of the pile goes to the hand; counts as the turn's draw
 4. **Create meld** - "Melduj" button (enabled when `Game::canHumanPlayerMeld()`) → `MainGLWidget::clickOnMeldButton()` creates a `Meld` owned by player 0 and partner 2 from the selected cards
 5. **Add to meld** - click an own-team meld with selected cards → `Game::canAddCardsToMeld()` / `Game::addCardsToMeld()`
 6. **Paginate hand** - arrows shown when hand > `Game::CARDS_PER_PAGE` (15)
@@ -93,6 +93,7 @@ Each failing check prints a `printf` debug message.
 - `Meld::canAddCards()` validates by building a temporary meld from existing + new cards
 - Each partnership may have only one meld per value (`Game::hasMeldWithValue(value, player)` checks melds owned by the player)
 - Meld base value = value of the first non-magic selected card
+- **Initial meld**: until `humanTeamHasInitialMeld` is set, the team's melds must together reach `humanTeamInitialMeldMinimumPoints` (computed in `initialize()` from the team's total in `results.json`: < 0 → 15, < 1500 → 50, < 3000 → 90, else 120; `Meld::getPoints()` sums `Card::getPoints()`). Discarding with insufficient melds opens a modal (`MainGLWidget::showInsufficientInitialMeldsDialog()`) with "Usuń ogony" (`Game::removeHumanTeamMelds()` returns the cards to the hand) and "Anuluj". The flag is set after a successful discard with melds or after taking the exposed deck
 - Melds are owned by a partnership: `owners = {player, partner}`; `Meld::isOwnedBy()` compares player numbers
 
 ## Rendering

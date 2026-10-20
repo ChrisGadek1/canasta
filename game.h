@@ -17,20 +17,25 @@ class Game
     int currentPlayerIndex;
     bool humanPlayerHasDrawnThisTurn;
     bool humanPlayerHasDiscardedThisTurn;
+    bool humanTeamHasInitialMeld;
+    int humanTeamInitialMeldMinimumPoints;
     int humanPlayerCardPage;
     void generatePlayers();
     void generateDecks();
     void meldRedThrees();
     Meld& getRedThreesMeld(const Player& player);
     Meld& getTeamMeld(CardValue value, const Player& player);
+    Meld* findTeamMeld(CardValue value, const Player& player);
+    int calculateInitialMeldMinimumPoints(const Player& player) const;
+    int getHumanTeamMeldsPoints() const;
     std::vector<Card*> getHumanPlayerChosenCards();
     static Position exposedDeckPosition(bool rotated = false);
     void discardChosenCard();
     void takeExposedDeck();
     void initializeTeamMeldCardPositions(const Player& player);
 public:
-    Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool humanPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), humanPlayerHasDrawnThisTurn(humanPlayerHasDrawnThisTurn), humanPlayerHasDiscardedThisTurn(false), humanPlayerCardPage(humanPlayerCardPage) {}
-    Game() : currentPlayerIndex(0), humanPlayerHasDrawnThisTurn(false), humanPlayerHasDiscardedThisTurn(false), humanPlayerCardPage(0) {}
+    Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool humanPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), humanPlayerHasDrawnThisTurn(humanPlayerHasDrawnThisTurn), humanPlayerHasDiscardedThisTurn(false), humanTeamHasInitialMeld(false), humanTeamInitialMeldMinimumPoints(0), humanPlayerCardPage(humanPlayerCardPage) {}
+    Game() : currentPlayerIndex(0), humanPlayerHasDrawnThisTurn(false), humanPlayerHasDiscardedThisTurn(false), humanTeamHasInitialMeld(false), humanTeamInitialMeldMinimumPoints(0), humanPlayerCardPage(0) {}
     Game(const Game&) = delete;
     Game& operator=(const Game&) = delete;
     ~Game();
@@ -54,6 +59,9 @@ public:
     bool canHumanPlayerDiscard();
     bool canHumanPlayerTakeExposedDeck();
     bool isExposedDeckFrozen();
+    int getHumanTeamInitialMeldMinimumPoints() const { return humanTeamInitialMeldMinimumPoints; }
+    bool hasHumanTeamInsufficientInitialMelds() const;
+    void removeHumanTeamMelds();
     void handleClickOnExposedDeck();
     bool mouseOverMeld(int vw, int vh, int x, int y, int& meldIndex) const;
     bool canAddCardsToMeld(int meldIndex) const;

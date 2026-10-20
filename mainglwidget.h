@@ -86,6 +86,7 @@ private:
     float pointsButtonBcolor = 55.0f;
     void setPointsButtonColor(float r, float g, float b);
     void clickOnPointsButton();
+    void showInsufficientInitialMeldsDialog();
 };
 
 #endif // MAINGLWIDGET_H

@@ -28,6 +28,7 @@ class Meld
     bool isOwnedBy(const Player& player) const;
     bool valid() const;
     bool canAddCards(const std::vector<Card*>& cards) const;
+    int getPoints() const;
 };
 
 #endif // MELD_H

@@ -109,6 +109,14 @@ bool Meld::canAddCards(const std::vector<Card*>& cards) const {
     return true;
 }
 
+int Meld::getPoints() const {
+    int points = 0;
+    for (auto& card : this->cards) {
+        points += card->getPoints();
+    }
+    return points;
+}
+
 void Meld::moveMagicCardsToFront() {
     std::vector<Card*> magic;
     std::vector<Card*> nonMagic;
