@@ -40,7 +40,6 @@ void Game::initialize() {
     this->currentPlayerIndex = 0;
     this->humanPlayerCardPage = 0;
     this->humanPlayerHasDrawnThisTurn = false;
-    this->humanPlayerHasDiscardedThisTurn = false;
     this->humanTeamHasInitialMeld = false;
     this->generatePlayers();
     this->humanTeamInitialMeldMinimumPoints = this->calculateInitialMeldMinimumPoints(this->players[0]);
@@ -232,10 +231,6 @@ void Game::handleClickOnHiddenDeck() {
     initializeCardsPositions();
 }
 
-void Game::resetHumanPlayerDrawFlag() {
-    humanPlayerHasDrawnThisTurn = false;
-}
-
 CardsDeck& Game::getHumanPlayerDeck() {
     auto humanPlayerDec = std::find_if(this->getDecks().begin(), this->getDecks().end(), [](const CardsDeck& deck) { return deck.getType() == PLAYERS_OWNED && deck.getPlayer().getIsHumanControlled(); });
     if (humanPlayerDec != this->getDecks().end()) {
@@ -276,7 +271,7 @@ bool Game::hasExactlyOneCardSelected() {
 }
 
 bool Game::canHumanPlayerDiscard() {
-    return currentPlayerIndex == 0 && humanPlayerHasDrawnThisTurn && !humanPlayerHasDiscardedThisTurn && hasExactlyOneCardSelected();
+    return currentPlayerIndex == 0 && humanPlayerHasDrawnThisTurn && hasExactlyOneCardSelected();
 }
 
 bool Game::canHumanPlayerTakeExposedDeck() {
@@ -419,6 +414,7 @@ void Game::takeExposedDeck() {
     humanTeamHasInitialMeld = true;
     meldRedThrees();
     initializeCardsPositions();
+    finishTurnIfHumanPlayerHasNoCards();
 }
 
 void Game::discardChosenCard() {
@@ -454,15 +450,39 @@ void Game::discardChosenCard() {
         selectedCard->position = exposedDeckPosition(selectedCard->freezesExposedDeck());
 
         exposedDeck.addCard(selectedCard);
-        humanPlayerHasDiscardedThisTurn = true;
-        if (getHumanTeamMeldsPoints() > 0) humanTeamHasInitialMeld = true;
 
         int totalPages = getTotalPages(humanPlayerDeck.getCards());
         if (humanPlayerCardPage >= totalPages) {
             humanPlayerCardPage = std::max(0, totalPages - 1);
         }
         initializeCardsPositions();
+        finishCurrentPlayerTurn();
     }
+}
+
+void Game::finishCurrentPlayerTurn() {
+    if (getHumanTeamMeldsPoints() > 0) humanTeamHasInitialMeld = true;
+    // AI players are not implemented yet - their turns are skipped
+    do {
+        currentPlayerIndex = (currentPlayerIndex + 1) % static_cast<int>(this->players.size());
+    } while (!this->players[currentPlayerIndex].getIsHumanControlled());
+    humanPlayerHasDrawnThisTurn = false;
+}
+
+void Game::finishTurnIfHumanPlayerHasNoCards() {
+    if (this->getHumanPlayerDeck().getCards().empty()) {
+        finishCurrentPlayerTurn();
+    }
+}
+
+bool Game::wouldMeldingChosenCardsFinishWithInsufficientInitialMelds() {
+    std::vector<Card*> chosenCards = this->getHumanPlayerChosenCards();
+    if (chosenCards.size() != this->getHumanPlayerDeck().getCards().size() || humanTeamHasInitialMeld) return false;
+    int chosenCardsPoints = 0;
+    for (auto* card : chosenCards) {
+        chosenCardsPoints += card->getPoints();
+    }
+    return getHumanTeamMeldsPoints() + chosenCardsPoints < humanTeamInitialMeldMinimumPoints;
 }
 
 bool Game::mouseOverHiddenDeck(int vw, int vh, int x, int y) {
@@ -535,7 +555,7 @@ void Game::addCardsToMeld(int meldIndex) {
     if (chosenCards.empty() || meldIndex < 0 || meldIndex >= static_cast<int>(this->melds.size())) {
         return;
     }
-    if (wouldAddingCardsToMeldFinishWithoutCanasta(meldIndex)) return;
+    if (wouldAddingCardsToMeldFinishWithoutCanasta(meldIndex) || wouldMeldingChosenCardsFinishWithInsufficientInitialMelds()) return;
     Meld& meld = this->melds[meldIndex];
     if (!meld.canAddCards(chosenCards)) return;
     for (size_t i = 0; i < chosenDecks.size(); i++) {
@@ -545,6 +565,7 @@ void Game::addCardsToMeld(int meldIndex) {
     }
     initializeMeldCardPositions();
     initializeCardsPositions();
+    finishTurnIfHumanPlayerHasNoCards();
 }
 
 void Game::initializeMeldCardPositions() {

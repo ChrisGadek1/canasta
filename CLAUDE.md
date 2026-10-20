@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A 4-player Canasta card game implemented in C++ using Qt5 and OpenGL for rendering. One human player (Player 0, "Marek") plays against three AI-controlled players (Players 1-3: "Jedrek", "Andrzej", "Mariusz"). The project is work in progress: drawing, selecting, discarding and melding work for the human player; AI turns, turn rotation and scoring are **not implemented yet**.
+A 4-player Canasta card game implemented in C++ using Qt5 and OpenGL for rendering. One human player (Player 0, "Marek") plays against three AI-controlled players (Players 1-3: "Jedrek", "Andrzej", "Mariusz"). The project is work in progress: drawing, selecting, discarding and melding work for the human player; AI turns and scoring are **not implemented yet**.
 
 ## Technology Stack
 
@@ -40,9 +40,9 @@ A 4-player Canasta card game implemented in C++ using Qt5 and OpenGL for renderi
 - `players` - 4 `Player` objects, index == player number
 - `decks` - order after `generateDecks()`: 4 `PLAYERS_OWNED` hands (players 0-3), then `EXPOSED`, then `HIDDEN`. Decks are looked up with `getHumanPlayerDeck()`, `getExposedDeck()`, `getHiddenDeck()` (`std::find_if` by type, throw `std::logic_error` if missing)
 - `melds` - all melds of both partnerships
-- `currentPlayerIndex` - always 0 at the moment (never advanced)
+- `currentPlayerIndex` - player whose turn it is; advanced by `finishCurrentPlayerTurn()` (after a discard, or via `finishTurnIfHumanPlayerHasNoCards()` after melding all hand cards). AI turns are skipped for now, so it always returns to 0 with `humanPlayerHasDrawnThisTurn` reset. The current player's name is drawn in yellow
 - `humanPlayerHasDrawnThisTurn` - set after drawing from the hidden deck (drawn red 3s are melded and replaced immediately in the same click) or taking the exposed deck; blocks further draws in `handleClickOnHiddenDeck()`; required by `canHumanPlayerMeld()`, `canAddCardsToMeld()` and `canHumanPlayerDiscard()`
-- `humanPlayerHasDiscardedThisTurn` - set after discarding (never reset yet); `canHumanPlayerDiscard()` allows a discard only after a draw, once, with exactly one card selected
+- `canHumanPlayerDiscard()` allows a discard only after a draw, with exactly one card selected; discarding ends the turn
 - `humanPlayerCardPage` - current page of the human hand
 
 ## Game Mechanics
@@ -94,7 +94,7 @@ Each failing check prints a `printf` debug message.
 - Each partnership may have only one meld per value (`Game::hasMeldWithValue(value, player)` checks melds owned by the player)
 - Meld base value = value of the first non-magic selected card
 - **Canasta** - meld of at least `Meld::CANASTA_SIZE` (7) cards (`Meld::isCanasta()`). Emptying the hand (finishing) is allowed only if the team has a canasta or the move completes one; otherwise the move is blocked and `MainGLWidget::showNoCanastaDialog()` is shown. Checked by `Game::wouldMeldFinishWithoutCanasta()` ("Melduj" with all hand cards), `wouldAddingCardsToMeldFinishWithoutCanasta()` (adding all hand cards to a meld) and `wouldClickOnExposedDeckFinishWithoutCanasta()` (discarding the last card, or taking the exposed deck with all hand cards when the rest of the pile is only red 3s or empty)
-- **Initial meld**: until `humanTeamHasInitialMeld` is set, the team's melds must together reach `humanTeamInitialMeldMinimumPoints` (computed in `initialize()` from the team's total in `results.json`: < 0 → 15, < 1500 → 50, < 3000 → 90, else 120; `Meld::getPoints()` sums `Card::getPoints()`). Discarding with insufficient melds opens a modal (`MainGLWidget::showInsufficientInitialMeldsDialog()`) with "Usuń ogony" (`Game::removeHumanTeamMelds()` returns the cards to the hand) and "Anuluj". The flag is set after a successful discard with melds or after taking the exposed deck
+- **Initial meld**: until `humanTeamHasInitialMeld` is set, the team's melds must together reach `humanTeamInitialMeldMinimumPoints` (computed in `initialize()` from the team's total in `results.json`: < 0 → 15, < 1500 → 50, < 3000 → 90, else 120; `Meld::getPoints()` sums `Card::getPoints()`). Discarding with insufficient melds opens a modal (`MainGLWidget::showInsufficientInitialMeldsDialog()`) with "Usuń ogony" (`Game::removeHumanTeamMelds()` returns the cards to the hand) and "Anuluj". The flag is set when a turn ends with team melds on the table or after taking the exposed deck. Finishing the turn by melding all hand cards (`wouldMeldingChosenCardsFinishWithInsufficientInitialMelds()`) also requires the minimum
 - Melds are owned by a partnership: `owners = {player, partner}`; `Meld::isOwnedBy()` compares player numbers
 
 ## Rendering
@@ -195,8 +195,8 @@ canasta/
 
 ## Not Implemented Yet
 
-- AI logic, turn rotation (`currentPlayerIndex` stays 0; `resetHumanPlayerDrawFlag()` is never called, so after one draw the human cannot draw again)
-- Scoring, canastas
+- AI logic (AI turns are skipped in `finishCurrentPlayerTurn()`), end of round
+- Scoring (incl. canasta bonuses)
 
 ## Important Notes for Development
 

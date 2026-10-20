@@ -16,7 +16,6 @@ class Game
     std::vector<Meld> melds;
     int currentPlayerIndex;
     bool humanPlayerHasDrawnThisTurn;
-    bool humanPlayerHasDiscardedThisTurn;
     bool humanTeamHasInitialMeld;
     int humanTeamInitialMeldMinimumPoints;
     int humanPlayerCardPage;
@@ -30,14 +29,15 @@ class Game
     int getHumanTeamMeldsPoints() const;
     bool hasHumanTeamCanasta() const;
     bool wouldHumanPlayerFinishWithoutCanasta(int remainingCardsCount, int resultingMeldSize) const;
+    void finishCurrentPlayerTurn();
     std::vector<Card*> getHumanPlayerChosenCards();
     static Position exposedDeckPosition(bool rotated = false);
     void discardChosenCard();
     void takeExposedDeck();
     void initializeTeamMeldCardPositions(const Player& player);
 public:
-    Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool humanPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), humanPlayerHasDrawnThisTurn(humanPlayerHasDrawnThisTurn), humanPlayerHasDiscardedThisTurn(false), humanTeamHasInitialMeld(false), humanTeamInitialMeldMinimumPoints(0), humanPlayerCardPage(humanPlayerCardPage) {}
-    Game() : currentPlayerIndex(0), humanPlayerHasDrawnThisTurn(false), humanPlayerHasDiscardedThisTurn(false), humanTeamHasInitialMeld(false), humanTeamInitialMeldMinimumPoints(0), humanPlayerCardPage(0) {}
+    Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool humanPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), humanPlayerHasDrawnThisTurn(humanPlayerHasDrawnThisTurn), humanTeamHasInitialMeld(false), humanTeamInitialMeldMinimumPoints(0), humanPlayerCardPage(humanPlayerCardPage) {}
+    Game() : currentPlayerIndex(0), humanPlayerHasDrawnThisTurn(false), humanTeamHasInitialMeld(false), humanTeamInitialMeldMinimumPoints(0), humanPlayerCardPage(0) {}
     Game(const Game&) = delete;
     Game& operator=(const Game&) = delete;
     ~Game();
@@ -67,6 +67,8 @@ public:
     bool wouldMeldFinishWithoutCanasta();
     bool wouldAddingCardsToMeldFinishWithoutCanasta(int meldIndex);
     bool wouldClickOnExposedDeckFinishWithoutCanasta();
+    bool wouldMeldingChosenCardsFinishWithInsufficientInitialMelds();
+    void finishTurnIfHumanPlayerHasNoCards();
     void handleClickOnExposedDeck();
     bool mouseOverMeld(int vw, int vh, int x, int y, int& meldIndex) const;
     bool canAddCardsToMeld(int meldIndex) const;
@@ -74,7 +76,6 @@ public:
     Player* getCurrentPlayer() { return &players[currentPlayerIndex]; }
     int getCurrentPlayerIndex() { return currentPlayerIndex; }
     void setCurrentPlayer(int index) { currentPlayerIndex = index; }
-     void resetHumanPlayerDrawFlag();
     bool hasHumanPlayerDrawnThisTurn() const { return humanPlayerHasDrawnThisTurn; }
     std::vector<RoundResult> loadRoundResults() const;
 

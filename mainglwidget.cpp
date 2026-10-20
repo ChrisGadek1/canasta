@@ -275,6 +275,7 @@ void MainGLWidget::clickOnMeldButton() {
         this->game.addMeld(meld);
         this->game.initializeMeldCardPositions();
         this->game.initializeCardsPositions();
+        this->game.finishTurnIfHumanPlayerHasNoCards();
         update();
     }
 }
@@ -310,7 +311,9 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x && this->game.canHumanPlayerMeld()) {
         setMeldButtonColor(92.0f, 87.0f, 87.0f);
         update();
-        if (this->game.wouldMeldFinishWithoutCanasta()) {
+        if (this->game.wouldMeldingChosenCardsFinishWithInsufficientInitialMelds()) {
+            showInsufficientInitialMeldsDialog();
+        } else if (this->game.wouldMeldFinishWithoutCanasta()) {
             showNoCanastaDialog();
         } else {
             clickOnMeldButton();
@@ -355,7 +358,9 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     {
         int meldIndex = -1;
         if (!showOpponentsMelds && this->game.mouseOverMeld(width(), height(), x, y, meldIndex) && this->game.canAddCardsToMeld(meldIndex)) {
-            if (this->game.wouldAddingCardsToMeldFinishWithoutCanasta(meldIndex)) {
+            if (this->game.wouldMeldingChosenCardsFinishWithInsufficientInitialMelds()) {
+                showInsufficientInitialMeldsDialog();
+            } else if (this->game.wouldAddingCardsToMeldFinishWithoutCanasta(meldIndex)) {
                 showNoCanastaDialog();
             } else {
                 this->game.addCardsToMeld(meldIndex);
@@ -422,9 +427,13 @@ void MainGLWidget::drawCenteredText(const QString& text, float centerX, float ce
 }
 
 void MainGLWidget::drawPlayersNames() {
-    glColor3f(1.f, 1.f, 1.f);
     QFont font("Arial", 14, QFont::Bold);
     for (auto &player : this->game.getPlayers()) {
+        if (player.getNumber() == this->game.getCurrentPlayerIndex()) {
+            glColor3f(1.f, 0.85f, 0.f);
+        } else {
+            glColor3f(1.f, 1.f, 1.f);
+        }
         float centerX, centerY;
         switch(player.getNumber()) {
             case 0:
@@ -446,6 +455,7 @@ void MainGLWidget::drawPlayersNames() {
         }
         drawCenteredText(QString::fromStdString(player.getName()), centerX, centerY, font);
     }
+    glColor3f(1.f, 1.f, 1.f);
 }
 
 void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
