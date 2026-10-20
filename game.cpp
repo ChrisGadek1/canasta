@@ -199,10 +199,11 @@ void Game::handleClickOnHiddenDeck() {
     if (humanPlayerHasDrawnThisTurn) return;
 
     CardsDeck& hiddenDeck = this->getHiddenDeck();
-    if (hiddenDeck.getCards().size() > 0) {
+    if (hiddenDeck.getCards().empty()) return;
+    CardsDeck& humanPlayerDeck = this->getHumanPlayerDeck();
+    while (!humanPlayerHasDrawnThisTurn && !hiddenDeck.getCards().empty()) {
         Card* firstCard = hiddenDeck.getCards().back();
         hiddenDeck.getCards().pop_back();
-        CardsDeck& humanPlayerDeck = this->getHumanPlayerDeck();
         firstCard->above = nullptr;
         firstCard->behind = nullptr;
         if (humanPlayerDeck.getCards().size() > 0) {
@@ -212,9 +213,9 @@ void Game::handleClickOnHiddenDeck() {
         }
         humanPlayerDeck.addCard(firstCard);
         humanPlayerHasDrawnThisTurn = !firstCard->isRedThree();
-        meldRedThrees();
-        initializeCardsPositions();
     }
+    meldRedThrees();
+    initializeCardsPositions();
 }
 
 void Game::resetHumanPlayerDrawFlag() {
