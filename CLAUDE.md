@@ -68,7 +68,8 @@ Partner of player `n` is `(n + 2) % 4`.
 ### Human Player Actions ([`MainGLWidget::mousePressEvent()`](mainglwidget.cpp:193))
 1. **Select card** - click a visible own card; `Card::setChosen(0)` toggles `chosen` and shifts it up by `0.06`
 2. **Draw** - click hidden deck → `Game::handleClickOnHiddenDeck()` moves the top card (`back()`) to the human hand
-3. **Discard** - with exactly one selected card, click the exposed deck → `Game::handleClickOnExposedDeck()`
+3. **Discard** - with exactly one selected card, click the exposed deck → `Game::handleClickOnExposedDeck()` → `discardChosenCard()`; an empty exposed deck is clickable at `Game::exposedDeckPosition()`
+3a. **Take exposed deck** - before drawing, with exactly two selected cards of the same value as the (non-magic) top card, click the exposed deck → `takeExposedDeck()`: the top card + the pair go to a new or existing team meld (`getTeamMeld()`), the rest of the pile goes to the hand; counts as the turn's draw
 4. **Create meld** - "Melduj" button (enabled when `Game::canHumanPlayerMeld()`) → `MainGLWidget::clickOnMeldButton()` creates a `Meld` owned by player 0 and partner 2 from the selected cards
 5. **Add to meld** - click an own-team meld with selected cards → `Game::canAddCardsToMeld()` / `Game::addCardsToMeld()`
 6. **Paginate hand** - arrows shown when hand > `Game::CARDS_PER_PAGE` (15)
@@ -192,7 +193,7 @@ canasta/
 ## Not Implemented Yet
 
 - AI logic, turn rotation (`currentPlayerIndex` stays 0; `resetHumanPlayerDrawFlag()` is never called, so after one draw the human cannot draw again)
-- Scoring, canastas, red-3 handling, picking up the discard pile
+- Scoring, canastas, other ways of picking up the discard pile (e.g. with one card to an existing meld, frozen pile)
 
 ## Important Notes for Development
 

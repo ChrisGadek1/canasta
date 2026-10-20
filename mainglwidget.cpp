@@ -296,8 +296,9 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     if (this->game.mouseOverHiddenDeck(width(), height(), x, y)) {
         this->game.handleClickOnHiddenDeck();
     }
-    if (this->game.mouseOverExposedDeck(width(), height(), x, y) && this->game.canHumanPlayerDiscard()) {
+    if (this->game.mouseOverExposedDeck(width(), height(), x, y) && (this->game.canHumanPlayerDiscard() || this->game.canHumanPlayerTakeExposedDeck())) {
         this->game.handleClickOnExposedDeck();
+        update();
     }
     // Handle left arrow button click (only if visible)
     if (shouldShowLeftArrow() && mouseOverLeftArrow(x, y)) {
@@ -436,7 +437,7 @@ void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
    if (this->game.mouseOverHiddenDeck(width(), height(), x, y) && !this->game.getHiddenDeck().getCards().empty() && !this->game.hasHumanPlayerDrawnThisTurn()) {
         QApplication::setOverrideCursor(Qt::PointingHandCursor);
     }
-    else if (this->game.mouseOverExposedDeck(width(), height(), x, y) && this->game.canHumanPlayerDiscard()) {
+    else if (this->game.mouseOverExposedDeck(width(), height(), x, y) && (this->game.canHumanPlayerDiscard() || this->game.canHumanPlayerTakeExposedDeck())) {
         QApplication::setOverrideCursor(Qt::PointingHandCursor);
     }
     else {

@@ -97,11 +97,11 @@ void Game::generateDecks() {
 
     Card* initialCard = initialCards.back();
     initialCards.pop_back();
-    initialCard->position = Position(Game::exposedLeftPos, Game::exposedBottomPos, Game::exposedBottomPos + Card::cardHeight, Game::exposedLeftPos + Card::cardHeight * Card::ratio);
+    initialCard->position = exposedDeckPosition();
     while(initialCard->isRedThree()) {
         exposedDeck.addCard(initialCard);
         initialCard = initialCards.back();
-        initialCard->position = Position(Game::exposedLeftPos, Game::exposedBottomPos, Game::exposedBottomPos + Card::cardHeight, Game::exposedLeftPos + Card::cardHeight * Card::ratio);
+        initialCard->position = exposedDeckPosition();
         initialCards.pop_back();
     }
     exposedDeck.addCard(initialCard);
@@ -145,6 +145,30 @@ Meld& Game::getRedThreesMeld(const Player& player) {
     std::vector<Player> meldOwners{player, partner};
     this->melds.insert(this->melds.begin(), Meld(CardValue::THREE, meldOwners, true));
     return this->melds.front();
+}
+
+Meld& Game::getTeamMeld(CardValue value, const Player& player) {
+    for (auto &meld : this->melds) {
+        if (!meld.isRedThreesMeld() && meld.getValue() == value && meld.isOwnedBy(player)) return meld;
+    }
+    Player partner = this->players[(player.getNumber() + 2) % 4];
+    std::vector<Player> meldOwners{player, partner};
+    this->melds.push_back(Meld(value, meldOwners));
+    return this->melds.back();
+}
+
+std::vector<Card*> Game::getHumanPlayerChosenCards() {
+    std::vector<Card*> chosenCards;
+    for (auto* card : this->getHumanPlayerDeck().getCards()) {
+        if (card->isChosen()) {
+            chosenCards.push_back(card);
+        }
+    }
+    return chosenCards;
+}
+
+Position Game::exposedDeckPosition() {
+    return Position(Game::exposedLeftPos, Game::exposedBottomPos, Game::exposedBottomPos + Card::cardHeight, Game::exposedLeftPos + Card::cardHeight * Card::ratio);
 }
 
 CardsDeck& Game::getHiddenDeck() {
@@ -215,9 +239,8 @@ CardsDeck& Game::getExposedDeck() {
 
 bool Game::mouseOverExposedDeck(int vw, int vh, int x, int y) {
     CardsDeck& exposedDeck = this->getExposedDeck();
-    if (exposedDeck.getCards().empty()) return false;
-    Card* topCard = exposedDeck.getCards().back();
-    Position exposedTopCardPos = Position::toPx(topCard->position.left, topCard->position.down, topCard->position.top, topCard->position.right, vw, vh);
+    Position topCardPos = exposedDeck.getCards().empty() ? exposedDeckPosition() : exposedDeck.getCards().back()->position;
+    Position exposedTopCardPos = Position::toPx(topCardPos.left, topCardPos.down, topCardPos.top, topCardPos.right, vw, vh);
     return exposedTopCardPos.down > y && exposedTopCardPos.top < y && exposedTopCardPos.right > x && exposedTopCardPos.left < x;
 }
 
@@ -241,8 +264,51 @@ bool Game::canHumanPlayerDiscard() {
     return currentPlayerIndex == 0 && humanPlayerHasDrawnThisTurn && !humanPlayerHasDiscardedThisTurn && hasExactlyOneCardSelected();
 }
 
+bool Game::canHumanPlayerTakeExposedDeck() {
+    if (currentPlayerIndex != 0 || humanPlayerHasDrawnThisTurn) return false;
+    std::vector<Card*>& exposedCards = this->getExposedDeck().getCards();
+    if (exposedCards.empty()) return false;
+    CardValue topCardValue = exposedCards.back()->value;
+    if (topCardValue == TWO || topCardValue == JOKER) return false;
+    std::vector<Card*> chosenCards = this->getHumanPlayerChosenCards();
+    return chosenCards.size() == 2 && std::all_of(chosenCards.begin(), chosenCards.end(), [topCardValue](const Card* card) { return card->value == topCardValue; });
+}
+
 void Game::handleClickOnExposedDeck() {
-    if (!canHumanPlayerDiscard()) return;
+    if (canHumanPlayerDiscard()) {
+        discardChosenCard();
+    } else if (canHumanPlayerTakeExposedDeck()) {
+        takeExposedDeck();
+    }
+}
+
+void Game::takeExposedDeck() {
+    CardsDeck& humanPlayerDeck = this->getHumanPlayerDeck();
+    std::vector<Card*>& handCards = humanPlayerDeck.getCards();
+    std::vector<Card*>& exposedCards = this->getExposedDeck().getCards();
+
+    std::vector<Card*> meldCards = this->getHumanPlayerChosenCards();
+    for (auto* card : meldCards) {
+        handCards.erase(std::find(handCards.begin(), handCards.end(), card));
+    }
+    meldCards.push_back(exposedCards.back());
+    exposedCards.pop_back();
+
+    Meld& meld = this->getTeamMeld(meldCards.back()->value, this->players[0]);
+    for (auto* card : meldCards) {
+        meld.addCard(card);
+    }
+    for (auto* card : exposedCards) {
+        humanPlayerDeck.addCard(card);
+    }
+    exposedCards.clear();
+
+    humanPlayerHasDrawnThisTurn = true;
+    meldRedThrees();
+    initializeCardsPositions();
+}
+
+void Game::discardChosenCard() {
 
     CardsDeck& humanPlayerDeck = this->getHumanPlayerDeck();
     Card* selectedCard = nullptr;
@@ -271,7 +337,7 @@ void Game::handleClickOnExposedDeck() {
             selectedCard->above = nullptr;
         }
 
-        selectedCard->position = Position(Game::exposedLeftPos, Game::exposedBottomPos, Game::exposedBottomPos + Card::cardHeight, Game::exposedLeftPos + Card::cardHeight * Card::ratio);
+        selectedCard->position = exposedDeckPosition();
 
         exposedDeck.addCard(selectedCard);
         humanPlayerHasDiscardedThisTurn = true;

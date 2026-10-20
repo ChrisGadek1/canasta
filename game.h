@@ -22,6 +22,11 @@ class Game
     void generateDecks();
     void meldRedThrees();
     Meld& getRedThreesMeld(const Player& player);
+    Meld& getTeamMeld(CardValue value, const Player& player);
+    std::vector<Card*> getHumanPlayerChosenCards();
+    static Position exposedDeckPosition();
+    void discardChosenCard();
+    void takeExposedDeck();
     void initializeTeamMeldCardPositions(const Player& player);
 public:
     Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool humanPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), humanPlayerHasDrawnThisTurn(humanPlayerHasDrawnThisTurn), humanPlayerHasDiscardedThisTurn(false), humanPlayerCardPage(humanPlayerCardPage) {}
@@ -47,6 +52,7 @@ public:
     bool mouseOverExposedDeck(int vw, int vh, int x, int y);
     bool hasExactlyOneCardSelected();
     bool canHumanPlayerDiscard();
+    bool canHumanPlayerTakeExposedDeck();
     void handleClickOnExposedDeck();
     bool mouseOverMeld(int vw, int vh, int x, int y, int& meldIndex) const;
     bool canAddCardsToMeld(int meldIndex) const;
