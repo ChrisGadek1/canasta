@@ -271,6 +271,7 @@ bool Game::canHumanPlayerTakeExposedDeck() {
     CardValue topCardValue = exposedCards.back()->value;
     if (topCardValue == TWO || topCardValue == JOKER) return false;
     std::vector<Card*> chosenCards = this->getHumanPlayerChosenCards();
+    if (chosenCards.empty()) return hasMeldWithValue(topCardValue, this->players[0]);
     return chosenCards.size() == 2 && std::all_of(chosenCards.begin(), chosenCards.end(), [topCardValue](const Card* card) { return card->value == topCardValue; });
 }
 
