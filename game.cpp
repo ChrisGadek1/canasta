@@ -370,7 +370,6 @@ void Game::removeHumanTeamMelds() {
     for (auto it = this->melds.begin(); it != this->melds.end();) {
         if (!it->isRedThreesMeld() && it->isOwnedBy(this->players[0])) {
             for (auto* card : it->getCards()) {
-                if (card->isChosen()) card->setChosen(0);
                 humanPlayerDeck.addCard(card);
             }
             it = this->melds.erase(it);
@@ -410,6 +409,7 @@ void Game::takeExposedDeck() {
 
     Meld& meld = this->getTeamMeld(meldCards.back()->value, this->players[0]);
     for (auto* card : meldCards) {
+        card->resetChosen();
         meld.addCard(card);
     }
     for (auto* card : exposedCards) {
@@ -457,11 +457,6 @@ void Game::discardChosenCard() {
         selectedCard->position = exposedDeckPosition(selectedCard->freezesExposedDeck());
 
         exposedDeck.addCard(selectedCard);
-
-        int totalPages = getTotalPages(humanPlayerDeck.getCards());
-        if (humanPlayerCardPage >= totalPages) {
-            humanPlayerCardPage = std::max(0, totalPages - 1);
-        }
         initializeCardsPositions();
         finishCurrentPlayerTurn();
     }
@@ -566,6 +561,7 @@ void Game::addCardsToMeld(int meldIndex) {
     Meld& meld = this->melds[meldIndex];
     if (!meld.canAddCards(chosenCards)) return;
     for (size_t i = 0; i < chosenDecks.size(); i++) {
+        chosenCards[i]->resetChosen();
         meld.addCard(chosenCards[i]);
         std::vector<Card*>& cards = chosenDecks[i]->getCards();
         cards.erase(std::find(cards.begin(), cards.end(), chosenCards[i]));
@@ -670,6 +666,7 @@ void Game::initializeCardsPositions() {
 
             // For human player, only position visible cards
             if (playerNum == 0) {
+                humanPlayerCardPage = std::min(humanPlayerCardPage, std::max(0, getTotalPages(cards) - 1));
                 cards = this->getVisibleCards(cards);
             }
 

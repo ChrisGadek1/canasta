@@ -268,6 +268,7 @@ void MainGLWidget::clickOnMeldButton() {
         std::vector<Player> meldOwners{(*currentPlayer), partner};
         Meld meld((*firstNonMagicCard)->value, meldOwners);
         for (int i = 0; i < chosenDecks.size(); i++) {
+            chosenCards[i]->resetChosen();
             meld.addCard(chosenCards[i]);
             std::vector<Card*>& cards = chosenDecks[i]->getCards();
             cards.erase(std::find(cards.begin(), cards.end(), chosenCards[i]));

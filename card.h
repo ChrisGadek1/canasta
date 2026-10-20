@@ -34,6 +34,7 @@ public:
     static void loadReverseTexture();
     void setChosen(int playerNumber);
     bool isChosen();
+    void resetChosen() { chosen = false; }
     bool isMagic() const { return value == CardValue::TWO || value == CardValue::JOKER; }
     bool isRedThree() const { return value == CardValue::THREE && (suit == CardSuit::DIAMONDS || suit == CardSuit::HEARTS); }
     bool freezesExposedDeck() const { return isMagic() || isRedThree(); }
