@@ -123,7 +123,7 @@ Each failing check prints a `printf` debug message.
 | Melds | columns from x `-0.5`, cards stacked upward from y `-0.5` with `0.1` gap |
 | UI buttons | constants in [`mainglwidget.h`](mainglwidget.h): `MELDING_BUTTON_*` (bottom right), `POINTS_BUTTON_*` (bottom left), `FLIP_BUTTON_*`, `ARROW_*`, `PLAYER_NAME_*` |
 
-Call `initializeCardsPositions()` / `initializeMeldCardPositions()` after any change of hand or meld contents, then `update()` on the widget.
+Call `initializeCardsPositions()` / `initializeMeldCardPositions()` after any change of hand or meld contents, then `update()` on the widget. `initializeCardsPositions()` also sorts every hand (`CardsDeck::sortCards()`: aces down to threes, then twos, then jokers; ties by suit). After drawing from the hidden deck, `humanPlayerCardPage` switches to the page with the drawn card.
 
 ### Paint order ([`MainGLWidget::paintGL()`](mainglwidget.cpp:424))
 Background → decks (hands, exposed, hidden) → melds (own team or opponents, depending on `showOpponentsMelds`) → arrows → flip button → "Melduj" button → "Punkty" button → player names. Buttons are drawn with `MainGLWidget::drawButton()`.

@@ -227,7 +227,14 @@ void Game::handleClickOnHiddenDeck() {
         humanPlayerDeck.addCard(firstCard);
         humanPlayerHasDrawnThisTurn = !firstCard->isRedThree();
     }
+    Card* drawnCard = humanPlayerDeck.getCards().back();
     meldRedThrees();
+    humanPlayerDeck.sortCards();
+    std::vector<Card*>& handCards = humanPlayerDeck.getCards();
+    auto drawnCardIt = std::find(handCards.begin(), handCards.end(), drawnCard);
+    if (drawnCardIt != handCards.end()) {
+        humanPlayerCardPage = static_cast<int>(drawnCardIt - handCards.begin()) / CARDS_PER_PAGE;
+    }
     initializeCardsPositions();
 }
 
@@ -657,6 +664,7 @@ void Game::initializeCardsPositions() {
     float cardHeight = Card::cardHeight;
     for (unsigned short deckI = 0; deckI < this->decks.size(); deckI++) {
         if (this->decks[deckI].getType() == PLAYERS_OWNED) {
+            this->decks[deckI].sortCards();
             std::vector<Card *> cards = this->decks[deckI].getCards();
             int playerNum = this->decks[deckI].getPlayer().getNumber();
 
