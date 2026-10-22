@@ -98,6 +98,7 @@ Each failing check prints a `printf` debug message.
 - **Canasta** - meld of at least `Meld::CANASTA_SIZE` (7) cards (`Meld::isCanasta()`). Emptying the hand (finishing) is allowed only if the team has a canasta or the move completes one; otherwise the move is blocked and `MainGLWidget::showNoCanastaDialog()` is shown. Checked by `Game::wouldMeldFinishWithoutCanasta()` ("Melduj" with all hand cards), `wouldAddingCardsToMeldFinishWithoutCanasta()` (adding all hand cards to a meld) and `wouldClickOnExposedDeckFinishWithoutCanasta()` (discarding the last card, or taking the exposed deck with all hand cards when the rest of the pile is only red 3s or empty)
 - **Initial meld**: until `humanTeamHasInitialMeld` is set, the team's melds must together reach `humanTeamInitialMeldMinimumPoints` (computed in `initialize()` from the team's total in `results.json`: < 0 → 15, < 1500 → 50, < 3000 → 90, else 120; `Meld::getPoints()` sums `Card::getPoints()`). Discarding with insufficient melds opens a modal (`MainGLWidget::showInsufficientInitialMeldsDialog()`) with "Usuń ogony" (`Game::removeHumanTeamMelds()` returns the cards to the hand) and "Anuluj". The flag is set when a turn ends with team melds on the table or after taking the exposed deck. Finishing the turn by melding all hand cards (`wouldMeldingChosenCardsFinishWithInsufficientInitialMelds()`) also requires the minimum
 - **Round end** - when the current player's hand is empty at the end of a turn, `finishCurrentPlayerTurn()` sets `roundFinishingPlayerNumber` (`isRoundFinished()`) and `roundFinishedConcealed` (no team melds in previous turns). `MainGLWidget::mousePressEvent()` then shows `showRoundEndDialog()` ("Koniec rundy", per-team breakdown from `Game::calculateTeamRoundScore()`: magic cards canasta 700 / natural 500 / mixed 300, red 3s 100 each or 800 for all four (negative without melds), going out 100 / concealed 200, melded cards, minus hand cards). Closing it calls `Game::finishRound()` (appends the totals to `results.json`, deletes all cards and re-runs `initialize()`) and reloads card textures (`loadCardsTextures()`, needs `makeCurrent()`)
+- **Empty hidden deck** - `roundFinishedByEmptyHiddenDeck` (also `isRoundFinished()`, no going-out bonus) is set by `finishCurrentPlayerTurn()` when a card is discarded while the hidden deck is empty, or by `handleClickOnHiddenDeck()` when the last hidden card drawn is a red 3
 - Melds are owned by a partnership: `owners = {player, partner}`; `Meld::isOwnedBy()` compares player numbers
 
 ## Rendering
@@ -200,7 +201,7 @@ canasta/
 ## Not Implemented Yet
 
 - AI logic (AI turns are skipped in `finishCurrentPlayerTurn()`)
-- End of the whole game (5000 points), dealer rotation (player 0 always starts), round end when the hidden deck runs out
+- End of the whole game (5000 points), dealer rotation (player 0 always starts)
 
 ## Important Notes for Development
 

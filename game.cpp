@@ -48,6 +48,7 @@ void Game::initialize() {
     this->humanTeamHasMeldedInPreviousTurns = false;
     this->roundFinishingPlayerNumber = -1;
     this->roundFinishedConcealed = false;
+    this->roundFinishedByEmptyHiddenDeck = false;
     this->generatePlayers();
     this->humanTeamInitialMeldMinimumPoints = this->calculateInitialMeldMinimumPoints(this->players[0]);
     this->generateDecks();
@@ -234,6 +235,7 @@ void Game::handleClickOnHiddenDeck() {
         humanPlayerDeck.addCard(firstCard);
         humanPlayerHasDrawnThisTurn = !firstCard->isRedThree();
     }
+    roundFinishedByEmptyHiddenDeck = !humanPlayerHasDrawnThisTurn;
     Card* drawnCard = humanPlayerDeck.getCards().back();
     meldRedThrees();
     humanPlayerDeck.sortCards();
@@ -476,6 +478,10 @@ void Game::finishCurrentPlayerTurn() {
             roundFinishedConcealed = !humanTeamHasMeldedInPreviousTurns;
             return;
         }
+    }
+    if (this->getHiddenDeck().getCards().empty()) {
+        roundFinishedByEmptyHiddenDeck = true;
+        return;
     }
     if (getHumanTeamMeldsPoints() > 0) {
         humanTeamHasInitialMeld = true;
@@ -845,7 +851,7 @@ TeamRoundScore Game::calculateTeamRoundScore(const Player& player) const {
     if (!hasMelds) redThreesPoints = -redThreesPoints;
 
     int goingOutPoints = 0;
-    if (isRoundFinished() && roundFinishingPlayerNumber % 2 == player.getNumber() % 2) {
+    if (roundFinishingPlayerNumber != -1 && roundFinishingPlayerNumber % 2 == player.getNumber() % 2) {
         goingOutPoints = roundFinishedConcealed ? 200 : 100;
     }
 

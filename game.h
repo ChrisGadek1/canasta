@@ -22,6 +22,7 @@ class Game
     bool humanTeamHasMeldedInPreviousTurns;
     int roundFinishingPlayerNumber;
     bool roundFinishedConcealed;
+    bool roundFinishedByEmptyHiddenDeck;
     int humanPlayerCardPage;
     void generatePlayers();
     void generateDecks();
@@ -42,8 +43,8 @@ class Game
     void deleteCards();
     void saveRoundResult(const RoundResult& roundResult) const;
 public:
-    Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool humanPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), humanPlayerHasDrawnThisTurn(humanPlayerHasDrawnThisTurn), humanTeamHasInitialMeld(false), humanTeamInitialMeldMinimumPoints(0), humanTeamHasMeldedInPreviousTurns(false), roundFinishingPlayerNumber(-1), roundFinishedConcealed(false), humanPlayerCardPage(humanPlayerCardPage) {}
-    Game() : currentPlayerIndex(0), humanPlayerHasDrawnThisTurn(false), humanTeamHasInitialMeld(false), humanTeamInitialMeldMinimumPoints(0), humanTeamHasMeldedInPreviousTurns(false), roundFinishingPlayerNumber(-1), roundFinishedConcealed(false), humanPlayerCardPage(0) {}
+    Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool humanPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), humanPlayerHasDrawnThisTurn(humanPlayerHasDrawnThisTurn), humanTeamHasInitialMeld(false), humanTeamInitialMeldMinimumPoints(0), humanTeamHasMeldedInPreviousTurns(false), roundFinishingPlayerNumber(-1), roundFinishedConcealed(false), roundFinishedByEmptyHiddenDeck(false), humanPlayerCardPage(humanPlayerCardPage) {}
+    Game() : currentPlayerIndex(0), humanPlayerHasDrawnThisTurn(false), humanTeamHasInitialMeld(false), humanTeamInitialMeldMinimumPoints(0), humanTeamHasMeldedInPreviousTurns(false), roundFinishingPlayerNumber(-1), roundFinishedConcealed(false), roundFinishedByEmptyHiddenDeck(false), humanPlayerCardPage(0) {}
     Game(const Game&) = delete;
     Game& operator=(const Game&) = delete;
     ~Game();
@@ -84,7 +85,7 @@ public:
     void setCurrentPlayer(int index) { currentPlayerIndex = index; }
     bool hasHumanPlayerDrawnThisTurn() const { return humanPlayerHasDrawnThisTurn; }
     std::vector<RoundResult> loadRoundResults() const;
-    bool isRoundFinished() const { return roundFinishingPlayerNumber != -1; }
+    bool isRoundFinished() const { return roundFinishingPlayerNumber != -1 || roundFinishedByEmptyHiddenDeck; }
     TeamRoundScore calculateTeamRoundScore(const Player& player) const;
     void finishRound();
 
