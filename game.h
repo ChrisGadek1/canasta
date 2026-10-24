@@ -3,6 +3,7 @@
 
 #include "cardsdeck.h"
 #include "player.h"
+#include <array>
 #include <vector>
 #include "meld.h"
 #include "roundresult.h"
@@ -16,14 +17,16 @@ class Game
     std::vector<CardsDeck> decks;
     std::vector<Meld> melds;
     int currentPlayerIndex;
-    bool humanPlayerHasDrawnThisTurn;
-    bool humanTeamHasInitialMeld;
-    int humanTeamInitialMeldMinimumPoints;
-    bool humanTeamHasMeldedInPreviousTurns;
+    bool currentPlayerHasDrawnThisTurn;
+    std::array<bool, 2> teamHasInitialMeld;
+    std::array<int, 2> teamInitialMeldMinimumPoints;
+    std::array<bool, 2> teamHasMeldedInPreviousTurns;
     int roundFinishingPlayerNumber;
     bool roundFinishedConcealed;
     bool roundFinishedByEmptyHiddenDeck;
     int humanPlayerCardPage;
+    static int getTeamIndex(int playerNumber) { return playerNumber % 2; }
+    std::vector<Player> getMeldOwners(int playerNumber) const;
     void generatePlayers();
     void generateDecks();
     void meldRedThrees();
@@ -31,20 +34,16 @@ class Game
     Meld& getTeamMeld(CardValue value, const Player& player);
     Meld* findTeamMeld(CardValue value, const Player& player);
     int calculateInitialMeldMinimumPoints(const Player& player) const;
-    int getHumanTeamMeldsPoints() const;
-    bool hasHumanTeamCanasta() const;
-    bool wouldHumanPlayerFinishWithoutCanasta(int remainingCardsCount, int resultingMeldSize) const;
     void finishCurrentPlayerTurn();
+    void finishTurnIfCurrentPlayerHasNoCards();
     std::vector<Card*> getHumanPlayerChosenCards();
     static Position exposedDeckPosition(bool rotated = false);
-    void discardChosenCard();
-    void takeExposedDeck();
     void initializeTeamMeldCardPositions(const Player& player);
     void deleteCards();
     void saveRoundResult(const RoundResult& roundResult) const;
 public:
-    Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool humanPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), humanPlayerHasDrawnThisTurn(humanPlayerHasDrawnThisTurn), humanTeamHasInitialMeld(false), humanTeamInitialMeldMinimumPoints(0), humanTeamHasMeldedInPreviousTurns(false), roundFinishingPlayerNumber(-1), roundFinishedConcealed(false), roundFinishedByEmptyHiddenDeck(false), humanPlayerCardPage(humanPlayerCardPage) {}
-    Game() : currentPlayerIndex(0), humanPlayerHasDrawnThisTurn(false), humanTeamHasInitialMeld(false), humanTeamInitialMeldMinimumPoints(0), humanTeamHasMeldedInPreviousTurns(false), roundFinishingPlayerNumber(-1), roundFinishedConcealed(false), roundFinishedByEmptyHiddenDeck(false), humanPlayerCardPage(0) {}
+    Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool currentPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), currentPlayerHasDrawnThisTurn(currentPlayerHasDrawnThisTurn), teamHasInitialMeld(), teamInitialMeldMinimumPoints(), teamHasMeldedInPreviousTurns(), roundFinishingPlayerNumber(-1), roundFinishedConcealed(false), roundFinishedByEmptyHiddenDeck(false), humanPlayerCardPage(humanPlayerCardPage) {}
+    Game() : currentPlayerIndex(0), currentPlayerHasDrawnThisTurn(false), teamHasInitialMeld(), teamInitialMeldMinimumPoints(), teamHasMeldedInPreviousTurns(), roundFinishingPlayerNumber(-1), roundFinishedConcealed(false), roundFinishedByEmptyHiddenDeck(false), humanPlayerCardPage(0) {}
     Game(const Game&) = delete;
     Game& operator=(const Game&) = delete;
     ~Game();
@@ -54,36 +53,58 @@ public:
     std::vector<CardsDeck>& getDecks();
     std::vector<Player>& getPlayers();
     std::vector<Meld>& getMelds();
-    void addMeld(Meld& meld);
     bool hasMeldWithValue(CardValue value, const Player& player) const;
-    bool canPlayerMeld(Player* player);
-    bool canHumanPlayerMeld();
     CardsDeck& getHiddenDeck();
-    void handleClickOnHiddenDeck();
-    CardsDeck& getHumanPlayerDeck();
     CardsDeck& getExposedDeck();
+    CardsDeck& getPlayerDeck(int playerNumber);
+    CardsDeck& getHumanPlayerDeck();
+    bool isExposedDeckFrozen();
+
+    // Actions of any player
+    bool hasCurrentPlayerDrawnThisTurn() const { return currentPlayerHasDrawnThisTurn; }
+    bool hasTeamInitialMeld(int playerNumber) const { return teamHasInitialMeld[getTeamIndex(playerNumber)]; }
+    int getTeamInitialMeldMinimumPoints(int playerNumber) const { return teamInitialMeldMinimumPoints[getTeamIndex(playerNumber)]; }
+    int getTeamMeldsPoints(int playerNumber) const;
+    bool hasTeamCanasta(int playerNumber) const;
+    bool hasTeamInsufficientInitialMelds(int playerNumber) const;
+    bool wouldFinishWithoutCanasta(int playerNumber, int remainingCardsCount, int resultingMeldSize) const;
+    bool wouldMeldingCardsFinishWithInsufficientInitialMelds(int playerNumber, const std::vector<Card*>& cards);
+    bool wouldTakingExposedDeckFinishWithoutCanasta(int playerNumber, const std::vector<Card*>& cards);
+    void drawFromHiddenDeck(int playerNumber);
+    bool canTakeExposedDeck(int playerNumber, const std::vector<Card*>& cards);
+    void takeExposedDeck(int playerNumber, const std::vector<Card*>& cards);
+    bool canCreateMeld(int playerNumber, const std::vector<Card*>& cards);
+    void createMeld(int playerNumber, const std::vector<Card*>& cards);
+    bool canAddCardsToMeld(int playerNumber, int meldIndex, const std::vector<Card*>& cards) const;
+    void addCardsToMeld(int playerNumber, int meldIndex, const std::vector<Card*>& cards);
+    bool canDiscard(int playerNumber, Card* card);
+    void discard(int playerNumber, Card* card);
+
+    // Actions of the human player, based on the chosen cards
+    bool canHumanPlayerDraw() const { return currentPlayerIndex == 0 && !currentPlayerHasDrawnThisTurn; }
+    void handleClickOnHiddenDeck();
     bool mouseOverHiddenDeck(int vw, int vh, int x, int y);
     bool mouseOverExposedDeck(int vw, int vh, int x, int y);
     bool hasExactlyOneCardSelected();
+    bool canHumanPlayerMeld();
+    void meldHumanPlayerChosenCards();
     bool canHumanPlayerDiscard();
     bool canHumanPlayerTakeExposedDeck();
-    bool isExposedDeckFrozen();
-    int getHumanTeamInitialMeldMinimumPoints() const { return humanTeamInitialMeldMinimumPoints; }
-    bool hasHumanTeamInsufficientInitialMelds() const;
+    int getHumanTeamInitialMeldMinimumPoints() const { return getTeamInitialMeldMinimumPoints(0); }
+    bool hasHumanTeamInsufficientInitialMelds() const { return hasTeamInsufficientInitialMelds(0); }
     void removeHumanTeamMelds();
     bool wouldMeldFinishWithoutCanasta();
     bool wouldAddingCardsToMeldFinishWithoutCanasta(int meldIndex);
     bool wouldClickOnExposedDeckFinishWithoutCanasta();
     bool wouldMeldingChosenCardsFinishWithInsufficientInitialMelds();
-    void finishTurnIfHumanPlayerHasNoCards();
     void handleClickOnExposedDeck();
     bool mouseOverMeld(int vw, int vh, int x, int y, int& meldIndex) const;
-    bool canAddCardsToMeld(int meldIndex) const;
+    bool canAddCardsToMeld(int meldIndex);
     void addCardsToMeld(int meldIndex);
+
     Player* getCurrentPlayer() { return &players[currentPlayerIndex]; }
     int getCurrentPlayerIndex() { return currentPlayerIndex; }
     void setCurrentPlayer(int index) { currentPlayerIndex = index; }
-    bool hasHumanPlayerDrawnThisTurn() const { return humanPlayerHasDrawnThisTurn; }
     std::vector<RoundResult> loadRoundResults() const;
     bool isRoundFinished() const { return roundFinishingPlayerNumber != -1 || roundFinishedByEmptyHiddenDeck; }
     TeamRoundScore calculateTeamRoundScore(const Player& player) const;

@@ -288,43 +288,8 @@ void MainGLWidget::showNoCanastaDialog() {
 }
 
 void MainGLWidget::clickOnMeldButton() {
-    std::vector<Card*> chosenCards;
-    std::vector<CardsDeck*> chosenDecks;
-    for(auto &deck: this->game.getDecks()) {
-        if(deck.getType() == PLAYERS_OWNED && deck.getPlayer().getNumber() == 0) {
-            std::vector<Card*> cardsToCheck = deck.getCards();
-            for(auto card: cardsToCheck) {
-                if(card->isChosen()) {
-                    chosenCards.push_back(card);
-                    chosenDecks.push_back(&deck);
-                }
-            }
-        }
-    }
-    Player* currentPlayer = nullptr;
-    for(auto &player: this->game.getPlayers()){
-        if(player.getNumber() == 0) {
-            currentPlayer = &player;
-        }
-    }
-    if(chosenCards.size() > 0) {
-        CardValue meldValue = Meld::baseValue(chosenCards);
-        if (this->game.hasMeldWithValue(meldValue, *currentPlayer)) return;
-        Player partner = this->game.getPlayers()[(currentPlayer->getNumber() + 2) % 4];
-        std::vector<Player> meldOwners{(*currentPlayer), partner};
-        Meld meld(meldValue, meldOwners);
-        for (int i = 0; i < chosenDecks.size(); i++) {
-            chosenCards[i]->resetChosen();
-            meld.addCard(chosenCards[i]);
-            std::vector<Card*>& cards = chosenDecks[i]->getCards();
-            cards.erase(std::find(cards.begin(), cards.end(), chosenCards[i]));
-        }
-        this->game.addMeld(meld);
-        this->game.initializeMeldCardPositions();
-        this->game.initializeCardsPositions();
-        this->game.finishTurnIfHumanPlayerHasNoCards();
-        update();
-    }
+    this->game.meldHumanPlayerChosenCards();
+    update();
 }
 
 void MainGLWidget::mousePressEvent(QMouseEvent * event) {
@@ -533,7 +498,7 @@ void MainGLWidget::mouseMoveEvent(QMouseEvent *eventMove) {
     else {
         setPointsButtonColor(82.0f, 57.0f, 55.0f);
     }
-   if (this->game.mouseOverHiddenDeck(width(), height(), x, y) && !this->game.getHiddenDeck().getCards().empty() && !this->game.hasHumanPlayerDrawnThisTurn()) {
+   if (this->game.mouseOverHiddenDeck(width(), height(), x, y) && !this->game.getHiddenDeck().getCards().empty() && this->game.canHumanPlayerDraw()) {
         QApplication::setOverrideCursor(Qt::PointingHandCursor);
     }
     else if (this->game.mouseOverExposedDeck(width(), height(), x, y) && (this->game.canHumanPlayerDiscard() || this->game.canHumanPlayerTakeExposedDeck())) {
