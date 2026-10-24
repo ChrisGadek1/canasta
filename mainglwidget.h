@@ -6,6 +6,9 @@
 #include "card.h"
 #include <vector>
 #include "game.h"
+#include "aiplayer.h"
+
+static constexpr int AI_STEP_DELAY_MS = 600;
 
 // Arrow button constants
 static constexpr float ARROW_SIZE = 0.1f;
@@ -54,6 +57,10 @@ protected:
 
 private:
     Game game;
+    std::vector<AiPlayer> aiPlayers;
+    bool aiStepScheduled = false;
+    void scheduleAiStep();
+    void playAiStep();
     GLuint textureId;
     GLuint leftArrowTextureId;
     GLuint rightArrowTextureId;

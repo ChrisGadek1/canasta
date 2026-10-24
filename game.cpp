@@ -497,10 +497,7 @@ void Game::finishCurrentPlayerTurn() {
         teamHasInitialMeld[teamIndex] = true;
         teamHasMeldedInPreviousTurns[teamIndex] = true;
     }
-    // AI players are not implemented yet - their turns are skipped
-    do {
-        currentPlayerIndex = (currentPlayerIndex + 1) % static_cast<int>(this->players.size());
-    } while (!this->players[currentPlayerIndex].getIsHumanControlled());
+    currentPlayerIndex = (currentPlayerIndex + 1) % static_cast<int>(this->players.size());
     currentPlayerHasDrawnThisTurn = false;
 }
 

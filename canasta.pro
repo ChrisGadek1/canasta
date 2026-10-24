@@ -23,9 +23,11 @@ SOURCES += main.cpp\
     mainglwidget.cpp \
     cardsdeck.cpp \
     position.cpp \
-    meld.cpp
+    meld.cpp \
+    aiplayer.cpp
 
 HEADERS  += mainwindow.h \
+    aiplayer.h \
     card.h \
     player.h \
     game.h \

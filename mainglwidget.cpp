@@ -11,6 +11,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QTableWidget>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #ifdef _WIN32
@@ -23,6 +24,30 @@ MainGLWidget::MainGLWidget(QWidget *parent)
     : QGLWidget(parent), game(), textureId(0), leftArrowTextureId(0), rightArrowTextureId(0), flipTextureId(0)
 {
     this->game.initialize();
+    for (auto &player : this->game.getPlayers()) {
+        this->aiPlayers.push_back(AiPlayer(player.getNumber()));
+    }
+}
+
+void MainGLWidget::scheduleAiStep() {
+    if (aiStepScheduled || this->game.isRoundFinished() || this->game.getCurrentPlayer()->getIsHumanControlled()) return;
+    aiStepScheduled = true;
+    QTimer::singleShot(AI_STEP_DELAY_MS, this, &MainGLWidget::playAiStep);
+}
+
+void MainGLWidget::playAiStep() {
+    aiStepScheduled = false;
+    if (this->game.isRoundFinished() || this->game.getCurrentPlayer()->getIsHumanControlled()) return;
+    AiPlayer& aiPlayer = this->aiPlayers[this->game.getCurrentPlayerIndex()];
+    if (!aiPlayer.isPlayingTurn()) {
+        aiPlayer.startTurn(this->game);
+    }
+    aiPlayer.step(this->game);
+    update();
+    if (this->game.isRoundFinished()) {
+        showRoundEndDialog();
+    }
+    scheduleAiStep();
 }
 
 MainGLWidget::~MainGLWidget()
@@ -384,6 +409,7 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
         update();
         showRoundEndDialog();
     }
+    scheduleAiStep();
 }
 
 #include <QFont>

@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A 4-player Canasta card game implemented in C++ using Qt5 and OpenGL for rendering. One human player (Player 0, "Marek") plays against three AI-controlled players (Players 1-3: "Jedrek", "Andrzej", "Mariusz"). The project is work in progress: drawing, selecting, discarding and melding work for the human player; AI turns are **not implemented yet**.
+A 4-player Canasta card game implemented in C++ using Qt5 and OpenGL for rendering. One human player (Player 0, "Marek") plays against three AI-controlled players (Players 1-3: "Jedrek", "Andrzej", "Mariusz"). The project is work in progress: drawing, selecting, discarding and melding work for the human player; AI players play basic turns (see [AI players](#ai-players)), smarter AI rules are planned.
 
 ## Technology Stack
 
@@ -27,6 +27,7 @@ A 4-player Canasta card game implemented in C++ using Qt5 and OpenGL for renderi
 | [`Game`](game.h) | [`game.h`](game.h), [`game.cpp`](game.cpp) | Game state, dealing, card layout, hit-testing, draw/discard/meld logic, hand pagination |
 | [`MainGLWidget`](mainglwidget.h) | [`mainglwidget.h`](mainglwidget.h), [`mainglwidget.cpp`](mainglwidget.cpp) | Owns `Game`; renders everything, handles mouse input, buttons, meld creation |
 | [`MainWindow`](mainwindow.h) | [`mainwindow.h`](mainwindow.h), [`mainwindow.cpp`](mainwindow.cpp), [`mainwindow.ui`](mainwindow.ui) | `QMainWindow` that sets `MainGLWidget` as its central widget |
+| [`AiPlayer`](aiplayer.h) | [`aiplayer.h`](aiplayer.h), [`aiplayer.cpp`](aiplayer.cpp) | Plays the turns of a non-human player through the player-generic `Game` actions |
 | [`Position`](position.h) | [`position.h`](position.h), [`position.cpp`](position.cpp) | Rectangle `left, down, top, right` in normalized coords |
 
 ### Enums
@@ -40,7 +41,7 @@ A 4-player Canasta card game implemented in C++ using Qt5 and OpenGL for renderi
 - `players` - 4 `Player` objects, index == player number
 - `decks` - order after `generateDecks()`: 4 `PLAYERS_OWNED` hands (players 0-3), then `EXPOSED`, then `HIDDEN`. Decks are looked up with `getHumanPlayerDeck()`, `getExposedDeck()`, `getHiddenDeck()` (`std::find_if` by type, throw `std::logic_error` if missing)
 - `melds` - all melds of both partnerships
-- `currentPlayerIndex` - player whose turn it is; advanced by `finishCurrentPlayerTurn()` (after a discard, or via `finishTurnIfCurrentPlayerHasNoCards()` after melding all hand cards). AI turns are skipped for now, so it always returns to 0 with `currentPlayerHasDrawnThisTurn` reset. The current player's name is drawn in yellow
+- `currentPlayerIndex` - player whose turn it is; advanced by `finishCurrentPlayerTurn()` (after a discard, or via `finishTurnIfCurrentPlayerHasNoCards()` after melding all hand cards) to the next player, with `currentPlayerHasDrawnThisTurn` reset. The current player's name is drawn in yellow
 - `currentPlayerHasDrawnThisTurn` - set after drawing from the hidden deck (drawn red 3s are melded and replaced immediately in the same draw) or taking the exposed deck; blocks further draws in `drawFromHiddenDeck()`; required by `canCreateMeld()`, `canAddCardsToMeld()` and `canDiscard()`
 - `teamHasInitialMeld`, `teamInitialMeldMinimumPoints`, `teamHasMeldedInPreviousTurns` - `std::array` per partnership, indexed by `getTeamIndex(playerNumber)` (`playerNumber % 2`)
 - **Player-generic actions** (for any player, with an explicit card list; each checks `currentPlayerIndex` and the game rules itself): `drawFromHiddenDeck()`, `canTakeExposedDeck()`/`takeExposedDeck()`, `canCreateMeld()`/`createMeld()`, `canAddCardsToMeld()`/`addCardsToMeld()`, `canDiscard()`/`discard()`, plus team queries (`getTeamMeldsPoints()`, `hasTeamCanasta()`, `hasTeamInsufficientInitialMelds()`, `wouldFinishWithoutCanasta()`, ...). The human methods (`canHumanPlayer...`, `handleClickOn...`, `meldHumanPlayerChosenCards()`, `canAddCardsToMeld(meldIndex)`) are thin wrappers passing player `0` and `getHumanPlayerChosenCards()`. AI code should use the generic ones
@@ -102,6 +103,14 @@ Each failing check prints a `printf` debug message.
 - **Round end** - when the current player's hand is empty at the end of a turn, `finishCurrentPlayerTurn()` sets `roundFinishingPlayerNumber` (`isRoundFinished()`) and `roundFinishedConcealed` (no team melds in previous turns). `MainGLWidget::mousePressEvent()` then shows `showRoundEndDialog()` ("Koniec rundy", per-team breakdown from `Game::calculateTeamRoundScore()`: magic cards canasta 700 / natural 500 / mixed 300, red 3s 100 each or 800 for all four (negative without melds), going out 100 / concealed 200, melded cards, minus hand cards). Closing it calls `Game::finishRound()` (appends the totals to `results.json`, deletes all cards and re-runs `initialize()`) and reloads card textures (`loadCardsTextures()`, needs `makeCurrent()`)
 - **Empty hidden deck** - `roundFinishedByEmptyHiddenDeck` (also `isRoundFinished()`, no going-out bonus) is set by `finishCurrentPlayerTurn()` when a card is discarded while the hidden deck is empty, or by `handleClickOnHiddenDeck()` when the last hidden card drawn is a red 3
 - Melds are owned by a partnership: `owners = {player, partner}`; `Meld::isOwnedBy()` compares player numbers
+
+## AI players
+
+- `MainGLWidget` keeps one `AiPlayer` per player (`aiPlayers`, index == player number). After every human click (`mousePressEvent()`) and every AI step, `scheduleAiStep()` starts a `QTimer::singleShot(AI_STEP_DELAY_MS)` if the current player is not human; `playAiStep()` calls `AiPlayer::startTurn()` (when `!isPlayingTurn()`) and `AiPlayer::step()`, repaints and shows the round end dialog when needed
+- One `step()` = one visible action. Turn phases (`AiTurnPhase`): `DRAW` → `MELD` (repeated while a meld action succeeds) → `DISCARD` → `DONE` (also set when the round finishes or the turn passes on)
+- `AiStrategy` is chosen in `startTurn()` (first match): `DEFENSIVE` (an opponent has ≤ 3 cards or the hidden deck has < 10), `OPENING` (no team initial meld), `GOING_OUT` (team canasta and ≤ 6 cards in hand), `BUILDING`. It is only logged for now
+- Current (basic) rules: always draw from the hidden deck; add natural cards to own-team melds; create new melds only from ≥ 3 naturals (no wild cards, no threes) - without a team initial meld only if all chosen melds together reach the minimum; keep at least 2 cards in hand (1 with a team canasta); discard by the lowest `getDiscardCost()` (black 3 first, singles before pairs, wild cards last)
+- Every decision is logged with `printf` (`P<number> ...`)
 
 ## Rendering
 
@@ -176,6 +185,7 @@ canasta/
 ├── player.*             # Player class
 ├── cardsdeck.*          # Deck management
 ├── meld.*               # Meld handling and validation
+├── aiplayer.*           # AI turn phases, strategy modes and move rules
 ├── position.*           # Rectangle + coordinate conversion
 ├── roundresult.h        # Points of both teams in one round
 ├── teamroundscore.h     # One team's round score breakdown (canastas, red 3s, going out, melded cards, hand cards)
@@ -202,7 +212,7 @@ canasta/
 
 ## Not Implemented Yet
 
-- AI logic (AI turns are skipped in `finishCurrentPlayerTurn()`)
+- Smarter AI: taking the exposed deck, melding wild cards, card memory, probabilities, strategy-dependent rules
 - End of the whole game (5000 points), dealer rotation (player 0 always starts)
 
 ## Important Notes for Development

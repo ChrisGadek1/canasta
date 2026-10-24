@@ -17,6 +17,7 @@ qt5_add_resources(RESOURCES
 )
 
 add_executable(canasta MACOSX_BUNDLE
+    aiplayer.cpp aiplayer.h
     card.cpp card.h
     cardsdeck.cpp cardsdeck.h
     cardsdecktype.h
