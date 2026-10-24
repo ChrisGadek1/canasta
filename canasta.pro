@@ -24,10 +24,12 @@ SOURCES += main.cpp\
     cardsdeck.cpp \
     position.cpp \
     meld.cpp \
-    aiplayer.cpp
+    aiplayer.cpp \
+    cardmemory.cpp
 
 HEADERS  += mainwindow.h \
     aiplayer.h \
+    cardmemory.h \
     card.h \
     player.h \
     game.h \

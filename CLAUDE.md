@@ -28,6 +28,7 @@ A 4-player Canasta card game implemented in C++ using Qt5 and OpenGL for renderi
 | [`MainGLWidget`](mainglwidget.h) | [`mainglwidget.h`](mainglwidget.h), [`mainglwidget.cpp`](mainglwidget.cpp) | Owns `Game`; renders everything, handles mouse input, buttons, meld creation |
 | [`MainWindow`](mainwindow.h) | [`mainwindow.h`](mainwindow.h), [`mainwindow.cpp`](mainwindow.cpp), [`mainwindow.ui`](mainwindow.ui) | `QMainWindow` that sets `MainGLWidget` as its central widget |
 | [`AiPlayer`](aiplayer.h) | [`aiplayer.h`](aiplayer.h), [`aiplayer.cpp`](aiplayer.cpp) | Plays the turns of a non-human player through the player-generic `Game` actions |
+| [`CardMemory`](cardmemory.h) | [`cardmemory.h`](cardmemory.h), [`cardmemory.cpp`](cardmemory.cpp) | Public knowledge about the round: cards known to be in each hand (`knownInHand`) and values each player discarded (`discardedBy`) |
 | [`Position`](position.h) | [`position.h`](position.h), [`position.cpp`](position.cpp) | Rectangle `left, down, top, right` in normalized coords |
 
 ### Enums
@@ -111,6 +112,7 @@ Each failing check prints a `printf` debug message.
 - `AiStrategy` is chosen in `startTurn()` (first match): `DEFENSIVE` (an opponent has ≤ 3 cards or the hidden deck has < 10), `OPENING` (no team initial meld), `GOING_OUT` (team canasta and ≤ 6 cards in hand), `BUILDING`. It is only logged for now
 - Current (basic) rules: always draw from the hidden deck; add natural cards to own-team melds; create new melds only from ≥ 3 naturals (no wild cards, no threes) - without a team initial meld only if all chosen melds together reach the minimum; keep at least 2 cards in hand (1 with a team canasta); discard by the lowest `getDiscardCost()` (black 3 first, singles before pairs, wild cards last)
 - Every decision is logged with `printf` (`P<number> ...`)
+- **Card memory** - `Game::cardMemory` (`getCardMemory()`, reset in `initialize()`) is updated only from public events: `takeExposedDeck()` (pile cards go to `knownInHand`, red 3s skipped), `removeHumanTeamMelds()` (returned cards), `createMeld()`/`addCardsToMeld()`/`takeExposedDeck()` (melded hand cards are forgotten), `discard()` (forgotten + `discardedBy`). `Game::getUnseenCardsCounts(playerNumber)` returns, per `CardValue` index, how many cards the player cannot see: 8 per value (4 jokers) minus own hand, exposed pile, all melds and other players' `knownInHand`. AI code must use only these and never read other players' hands
 
 ## Rendering
 
@@ -186,6 +188,7 @@ canasta/
 ├── cardsdeck.*          # Deck management
 ├── meld.*               # Meld handling and validation
 ├── aiplayer.*           # AI turn phases, strategy modes and move rules
+├── cardmemory.*         # Publicly known cards in hands and discards (used by the AI)
 ├── position.*           # Rectangle + coordinate conversion
 ├── roundresult.h        # Points of both teams in one round
 ├── teamroundscore.h     # One team's round score breakdown (canastas, red 3s, going out, melded cards, hand cards)

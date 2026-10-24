@@ -49,6 +49,7 @@ void Game::initialize() {
     this->roundFinishingPlayerNumber = -1;
     this->roundFinishedConcealed = false;
     this->roundFinishedByEmptyHiddenDeck = false;
+    this->cardMemory.reset();
     this->generatePlayers();
     for (int teamIndex = 0; teamIndex < 2; teamIndex++) {
         this->teamInitialMeldMinimumPoints[teamIndex] = this->calculateInitialMeldMinimumPoints(this->players[teamIndex]);
@@ -404,6 +405,7 @@ void Game::removeHumanTeamMelds() {
             for (auto* card : it->getCards()) {
                 humanPlayerDeck.addCard(card);
             }
+            this->cardMemory.onCardsTakenToHand(0, it->getCards());
             it = this->melds.erase(it);
         } else {
             ++it;
@@ -437,8 +439,10 @@ void Game::takeExposedDeck(int playerNumber, const std::vector<Card*>& cards) {
     for (auto* card : meldCards) {
         handCards.erase(std::find(handCards.begin(), handCards.end(), card));
     }
+    this->cardMemory.onCardsMelded(playerNumber, meldCards);
     meldCards.push_back(exposedCards.back());
     exposedCards.pop_back();
+    this->cardMemory.onCardsTakenToHand(playerNumber, exposedCards);
 
     Meld& meld = this->getTeamMeld(meldCards.back()->value, this->players[playerNumber]);
     for (auto* card : meldCards) {
@@ -464,6 +468,7 @@ void Game::discard(int playerNumber, Card* card) {
     if (wouldFinishWithoutCanasta(playerNumber, static_cast<int>(handCards.size()) - 1, 0)) return;
     handCards.erase(std::find(handCards.begin(), handCards.end(), card));
     card->resetChosen();
+    this->cardMemory.onCardDiscarded(playerNumber, card);
 
     CardsDeck& exposedDeck = this->getExposedDeck();
     if (exposedDeck.getCards().size() > 0) {
@@ -480,6 +485,33 @@ void Game::discard(int playerNumber, Card* card) {
     exposedDeck.addCard(card);
     initializeCardsPositions();
     finishCurrentPlayerTurn();
+}
+
+std::array<int, CardMemory::CARD_VALUES_COUNT> Game::getUnseenCardsCounts(int playerNumber) {
+    constexpr int cardsPerValue = 8;
+    constexpr int jokersCount = 4;
+    std::array<int, CardMemory::CARD_VALUES_COUNT> unseenCounts;
+    unseenCounts.fill(cardsPerValue);
+    unseenCounts[CardValue::JOKER] = jokersCount;
+    std::vector<Card*> seenCards = this->getPlayerDeck(playerNumber).getCards();
+    std::vector<Card*>& exposedCards = this->getExposedDeck().getCards();
+    seenCards.insert(seenCards.end(), exposedCards.begin(), exposedCards.end());
+    for (const auto& meld : this->melds) {
+        seenCards.insert(seenCards.end(), meld.getCards().begin(), meld.getCards().end());
+    }
+    for (const auto* card : seenCards) {
+        unseenCounts[card->value]--;
+    }
+    for (int otherPlayerNumber = 0; otherPlayerNumber < CardMemory::PLAYERS_COUNT; otherPlayerNumber++) {
+        if (otherPlayerNumber == playerNumber) continue;
+        for (int value = 0; value < CardMemory::CARD_VALUES_COUNT; value++) {
+            unseenCounts[value] -= this->cardMemory.getKnownInHand(otherPlayerNumber, static_cast<CardValue>(value));
+        }
+    }
+    for (auto& unseenCount : unseenCounts) {
+        unseenCount = std::max(unseenCount, 0);
+    }
+    return unseenCounts;
 }
 
 void Game::finishCurrentPlayerTurn() {
@@ -582,6 +614,7 @@ void Game::addCardsToMeld(int playerNumber, int meldIndex, const std::vector<Car
         meld.addCard(card);
         handCards.erase(std::find(handCards.begin(), handCards.end(), card));
     }
+    this->cardMemory.onCardsMelded(playerNumber, cards);
     initializeMeldCardPositions();
     initializeCardsPositions();
     finishTurnIfCurrentPlayerHasNoCards();
@@ -662,6 +695,7 @@ void Game::createMeld(int playerNumber, const std::vector<Card*>& cards) {
         handCards.erase(std::find(handCards.begin(), handCards.end(), card));
     }
     this->melds.push_back(meld);
+    this->cardMemory.onCardsMelded(playerNumber, cards);
     initializeMeldCardPositions();
     initializeCardsPositions();
     finishTurnIfCurrentPlayerHasNoCards();

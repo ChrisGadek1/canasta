@@ -1,6 +1,7 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include "cardmemory.h"
 #include "cardsdeck.h"
 #include "player.h"
 #include <array>
@@ -16,6 +17,7 @@ class Game
     std::vector<Player> players;
     std::vector<CardsDeck> decks;
     std::vector<Meld> melds;
+    CardMemory cardMemory;
     int currentPlayerIndex;
     bool currentPlayerHasDrawnThisTurn;
     std::array<bool, 2> teamHasInitialMeld;
@@ -79,6 +81,8 @@ public:
     void addCardsToMeld(int playerNumber, int meldIndex, const std::vector<Card*>& cards);
     bool canDiscard(int playerNumber, Card* card);
     void discard(int playerNumber, Card* card);
+    const CardMemory& getCardMemory() const { return cardMemory; }
+    std::array<int, CardMemory::CARD_VALUES_COUNT> getUnseenCardsCounts(int playerNumber);
 
     // Actions of the human player, based on the chosen cards
     bool canHumanPlayerDraw() const { return currentPlayerIndex == 0 && !currentPlayerHasDrawnThisTurn; }
