@@ -19,6 +19,7 @@ class Game
     std::vector<Meld> melds;
     CardMemory cardMemory;
     int currentPlayerIndex;
+    int turnNumber;
     bool currentPlayerHasDrawnThisTurn;
     std::array<bool, 2> teamHasInitialMeld;
     std::array<int, 2> teamInitialMeldMinimumPoints;
@@ -44,8 +45,8 @@ class Game
     void deleteCards();
     void saveRoundResult(const RoundResult& roundResult) const;
 public:
-    Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool currentPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), currentPlayerHasDrawnThisTurn(currentPlayerHasDrawnThisTurn), teamHasInitialMeld(), teamInitialMeldMinimumPoints(), teamHasMeldedInPreviousTurns(), roundFinishingPlayerNumber(-1), roundFinishedConcealed(false), roundFinishedByEmptyHiddenDeck(false), humanPlayerCardPage(humanPlayerCardPage) {}
-    Game() : currentPlayerIndex(0), currentPlayerHasDrawnThisTurn(false), teamHasInitialMeld(), teamInitialMeldMinimumPoints(), teamHasMeldedInPreviousTurns(), roundFinishingPlayerNumber(-1), roundFinishedConcealed(false), roundFinishedByEmptyHiddenDeck(false), humanPlayerCardPage(0) {}
+    Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool currentPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), turnNumber(0), currentPlayerHasDrawnThisTurn(currentPlayerHasDrawnThisTurn), teamHasInitialMeld(), teamInitialMeldMinimumPoints(), teamHasMeldedInPreviousTurns(), roundFinishingPlayerNumber(-1), roundFinishedConcealed(false), roundFinishedByEmptyHiddenDeck(false), humanPlayerCardPage(humanPlayerCardPage) {}
+    Game() : currentPlayerIndex(0), turnNumber(0), currentPlayerHasDrawnThisTurn(false), teamHasInitialMeld(), teamInitialMeldMinimumPoints(), teamHasMeldedInPreviousTurns(), roundFinishingPlayerNumber(-1), roundFinishedConcealed(false), roundFinishedByEmptyHiddenDeck(false), humanPlayerCardPage(0) {}
     Game(const Game&) = delete;
     Game& operator=(const Game&) = delete;
     ~Game();
@@ -82,7 +83,8 @@ public:
     bool canDiscard(int playerNumber, Card* card);
     void discard(int playerNumber, Card* card);
     const CardMemory& getCardMemory() const { return cardMemory; }
-    std::array<int, CardMemory::CARD_VALUES_COUNT> getUnseenCardsCounts(int playerNumber);
+    int getTurnNumber() const { return turnNumber; }
+    std::array<int, CardMemory::CARD_VALUES_COUNT> getUnseenCardsCounts(int playerNumber, int memorySinceTurn = 0);
 
     // Actions of the human player, based on the chosen cards
     bool canHumanPlayerDraw() const { return currentPlayerIndex == 0 && !currentPlayerHasDrawnThisTurn; }

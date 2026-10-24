@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <cmath>
 
-AiProbability::AiProbability(Game& game, int playerNumber) : game(game), playerNumber(playerNumber), unseenCounts(game.getUnseenCardsCounts(playerNumber)), totalUnseenCount(0), unseenRedThreesCount(RED_THREES_COUNT) {
+AiProbability::AiProbability(Game& game, int playerNumber, const AiWeights& weights, int memorySinceTurn) : game(game), playerNumber(playerNumber), weights(weights), memorySinceTurn(memorySinceTurn), unseenCounts(game.getUnseenCardsCounts(playerNumber, memorySinceTurn)), totalUnseenCount(0), unseenRedThreesCount(RED_THREES_COUNT) {
     for (int unseenCount : this->unseenCounts) {
         this->totalUnseenCount += unseenCount;
     }
@@ -31,10 +31,10 @@ double AiProbability::redThreeDrawProbability() const {
 
 double AiProbability::opponentHasPairProbability(int opponentNumber, CardValue value) const {
     const CardMemory& cardMemory = this->game.getCardMemory();
-    int knownCount = cardMemory.getKnownInHand(opponentNumber, value);
+    int knownCount = cardMemory.getKnownInHand(opponentNumber, value, this->memorySinceTurn);
     if (knownCount >= 2) return 1.0;
 
-    int unknownCardsCount = static_cast<int>(this->game.getPlayerDeck(opponentNumber).getCards().size()) - cardMemory.getKnownInHandTotal(opponentNumber);
+    int unknownCardsCount = static_cast<int>(this->game.getPlayerDeck(opponentNumber).getCards().size()) - cardMemory.getKnownInHandTotal(opponentNumber, this->memorySinceTurn);
     double p = this->drawProbability(value);
     double noneProbability = std::pow(1.0 - p, unknownCardsCount);
     double probability = 1.0 - noneProbability;
@@ -42,22 +42,22 @@ double AiProbability::opponentHasPairProbability(int opponentNumber, CardValue v
         double exactlyOneProbability = unknownCardsCount > 0 ? unknownCardsCount * p * std::pow(1.0 - p, unknownCardsCount - 1) : 0.0;
         probability -= exactlyOneProbability;
     }
-    if (cardMemory.hasDiscarded(opponentNumber, value)) {
-        probability *= DISCARDED_VALUE_PAIR_FACTOR;
+    if (cardMemory.hasDiscarded(opponentNumber, value, this->memorySinceTurn)) {
+        probability *= this->weights.discardedValuePairFactor;
     }
     return std::max(probability, 0.0);
 }
 
 int AiProbability::cardGain(CardValue value) const {
     if (value == CardValue::THREE) return 0;
-    if (value == CardValue::TWO || value == CardValue::JOKER) return MAGIC_CARD_GAIN;
-    if (this->game.hasMeldWithValue(value, this->game.getPlayers()[this->playerNumber])) return EXTENDING_MELD_GAIN;
-    if (this->countNaturalCardsInHand(value) > 0) return MAKING_PAIR_GAIN;
-    return SINGLE_CARD_GAIN;
+    if (value == CardValue::TWO || value == CardValue::JOKER) return this->weights.magicCardGain;
+    if (this->game.hasMeldWithValue(value, this->game.getPlayers()[this->playerNumber])) return this->weights.extendingMeldGain;
+    if (this->countNaturalCardsInHand(value) > 0) return this->weights.makingPairGain;
+    return this->weights.singleCardGain;
 }
 
 double AiProbability::expectedDrawGain() const {
-    double expectedGain = this->redThreeDrawProbability() * RED_THREE_GAIN;
+    double expectedGain = this->redThreeDrawProbability() * this->weights.redThreeGain;
     for (int value = 0; value < CardMemory::CARD_VALUES_COUNT; value++) {
         expectedGain += this->drawProbability(static_cast<CardValue>(value)) * this->cardGain(static_cast<CardValue>(value));
     }

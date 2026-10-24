@@ -31,6 +31,7 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     aiplayer.h \
     aiprobability.h \
+    aiweights.h \
     cardmemory.h \
     card.h \
     player.h \

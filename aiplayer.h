@@ -2,8 +2,11 @@
 #define AIPLAYER_H
 
 #include "aiprobability.h"
+#include "aiweights.h"
 #include "game.h"
+#include <chrono>
 #include <map>
+#include <random>
 #include <vector>
 
 enum class AiTurnPhase { DRAW, MELD, DISCARD, DONE };
@@ -17,48 +20,18 @@ class AiPlayer
         double score;
     };
 
-    static constexpr int DEFENSIVE_OPPONENT_HAND_SIZE = 3;
-    static constexpr int DEFENSIVE_PARTNER_HAND_SIZE = 2;
-    static constexpr int DEFENSIVE_HIDDEN_DECK_SIZE = 10;
-    static constexpr int GOING_OUT_HAND_SIZE = 6;
-
-    static constexpr int ALWAYS_TAKE_EXPOSED_DECK_SIZE = 7;
-    static constexpr int PILE_CARD_SCORE = 15;
-    static constexpr int USEFUL_PILE_CARD_SCORE = 40;
-    static constexpr int MAGIC_PILE_CARD_SCORE = 25;
-    static constexpr int INITIAL_MELD_SCORE = 60;
-    static constexpr int PILE_CANASTA_SCORE = 50;
-    static constexpr int DEAD_PILE_CARD_PENALTY = 10;
-    static constexpr int ADDED_MAGIC_CARD_PENALTY = 30;
-    static constexpr double JUNK_PILE_FACTOR = 0.5;
-
-    static constexpr int MAX_OPENING_MAGIC_CARDS = 2;
-    static constexpr int MELD_SIZE_SCORE = 10;
-    static constexpr int MAGIC_CARD_MELD_PENALTY = 20;
-    static constexpr int DEFENSIVE_POINTS_FACTOR = 2;
     static constexpr int MAGIC_CARDS_CANASTA_SCORE = 700;
     static constexpr int NATURAL_CANASTA_SCORE = 500;
     static constexpr int MIXED_CANASTA_SCORE = 300;
 
-    static constexpr int MAGIC_CARD_KEEP_VALUE = 100;
-    static constexpr int FREEZING_MAGIC_CARD_KEEP_VALUE = -50;
-    static constexpr int FREEZE_EXPOSED_DECK_SIZE = 5;
-    static constexpr int FREEZE_DANGER = 50;
-    static constexpr int PAIR_KEEP_VALUE = 30;
-    static constexpr int EXTRA_CARD_KEEP_VALUE = 15;
-    static constexpr int SINGLE_KEEP_VALUE = 10;
-    static constexpr int OPPONENT_MELD_DANGER = 200;
-    static constexpr int KNOWN_PAIR_DANGER = 150;
-    static constexpr int KNOWN_CARD_DANGER = 60;
-    static constexpr int PAIR_PROBABILITY_DANGER = 100;
-    static constexpr int DISCARDED_VALUE_SAFETY = 30;
-    static constexpr double FROZEN_DANGER_FACTOR = 0.5;
-    static constexpr double PILE_SIZE_DANGER_DIVISOR = 5.0;
-
     int playerNumber;
+    AiWeights weights;
+    std::default_random_engine randomEngine;
     AiTurnPhase phase;
     AiStrategy strategy;
     std::vector<std::vector<Card*>> plannedOpeningMelds;
+    int getMemorySinceTurn(Game& game) const { return weights.memoryTurns < 0 ? 0 : game.getTurnNumber() - weights.memoryTurns; }
+    double noisy(double score);
     const Player& getPlayer(Game& game) const { return game.getPlayers()[playerNumber]; }
     std::vector<Card*>& getHandCards(Game& game) const { return game.getPlayerDeck(playerNumber).getCards(); }
     bool canDumpCards() const { return strategy == AiStrategy::DEFENSIVE || strategy == AiStrategy::GOING_OUT; }
@@ -84,7 +57,7 @@ class AiPlayer
     static int getCanastaScore(const std::vector<Card*>& cards);
     static const char* strategyName(AiStrategy strategy);
 public:
-    explicit AiPlayer(int playerNumber) : playerNumber(playerNumber), phase(AiTurnPhase::DONE), strategy(AiStrategy::OPENING) {}
+    AiPlayer(int playerNumber, const AiWeights& weights) : playerNumber(playerNumber), weights(weights), randomEngine(static_cast<unsigned>(std::chrono::system_clock::now().time_since_epoch().count()) + playerNumber), phase(AiTurnPhase::DONE), strategy(AiStrategy::OPENING) {}
     int getPlayerNumber() const { return playerNumber; }
     bool isPlayingTurn() const { return phase != AiTurnPhase::DONE; }
     void startTurn(Game& game);

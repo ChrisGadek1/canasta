@@ -25,7 +25,7 @@ MainGLWidget::MainGLWidget(QWidget *parent)
 {
     this->game.initialize();
     for (auto &player : this->game.getPlayers()) {
-        this->aiPlayers.push_back(AiPlayer(player.getNumber()));
+        this->aiPlayers.push_back(AiPlayer(player.getNumber(), AiWeights::normal()));
     }
 }
 
