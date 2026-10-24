@@ -25,10 +25,12 @@ SOURCES += main.cpp\
     position.cpp \
     meld.cpp \
     aiplayer.cpp \
+    aiprobability.cpp \
     cardmemory.cpp
 
 HEADERS  += mainwindow.h \
     aiplayer.h \
+    aiprobability.h \
     cardmemory.h \
     card.h \
     player.h \

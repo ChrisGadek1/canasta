@@ -1,4 +1,5 @@
 #include "aiplayer.h"
+#include "aiprobability.h"
 #include <algorithm>
 #include <cstdio>
 
@@ -44,9 +45,10 @@ void AiPlayer::chooseStrategy(Game& game) {
 }
 
 void AiPlayer::playDrawPhase(Game& game) {
+    double expectedDrawGain = AiProbability(game, this->playerNumber).expectedDrawGain();
     game.drawFromHiddenDeck(this->playerNumber);
     if (game.hasCurrentPlayerDrawnThisTurn()) {
-        printf("P%d draws from the hidden deck\n", this->playerNumber);
+        printf("P%d draws from the hidden deck (ev=%.1f)\n", this->playerNumber, expectedDrawGain);
     } else if (!game.isRoundFinished()) {
         printf("P%d could not draw a card\n", this->playerNumber);
     }

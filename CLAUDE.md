@@ -28,6 +28,7 @@ A 4-player Canasta card game implemented in C++ using Qt5 and OpenGL for renderi
 | [`MainGLWidget`](mainglwidget.h) | [`mainglwidget.h`](mainglwidget.h), [`mainglwidget.cpp`](mainglwidget.cpp) | Owns `Game`; renders everything, handles mouse input, buttons, meld creation |
 | [`MainWindow`](mainwindow.h) | [`mainwindow.h`](mainwindow.h), [`mainwindow.cpp`](mainwindow.cpp), [`mainwindow.ui`](mainwindow.ui) | `QMainWindow` that sets `MainGLWidget` as its central widget |
 | [`AiPlayer`](aiplayer.h) | [`aiplayer.h`](aiplayer.h), [`aiplayer.cpp`](aiplayer.cpp) | Plays the turns of a non-human player through the player-generic `Game` actions |
+| [`AiProbability`](aiprobability.h) | [`aiprobability.h`](aiprobability.h), [`aiprobability.cpp`](aiprobability.cpp) | Per-decision snapshot of unseen cards for one AI player with draw / opponent-pair probabilities |
 | [`CardMemory`](cardmemory.h) | [`cardmemory.h`](cardmemory.h), [`cardmemory.cpp`](cardmemory.cpp) | Public knowledge about the round: cards known to be in each hand (`knownInHand`) and values each player discarded (`discardedBy`) |
 | [`Position`](position.h) | [`position.h`](position.h), [`position.cpp`](position.cpp) | Rectangle `left, down, top, right` in normalized coords |
 
@@ -113,6 +114,7 @@ Each failing check prints a `printf` debug message.
 - Current (basic) rules: always draw from the hidden deck; add natural cards to own-team melds; create new melds only from ≥ 3 naturals (no wild cards, no threes) - without a team initial meld only if all chosen melds together reach the minimum; keep at least 2 cards in hand (1 with a team canasta); discard by the lowest `getDiscardCost()` (black 3 first, singles before pairs, wild cards last)
 - Every decision is logged with `printf` (`P<number> ...`)
 - **Card memory** - `Game::cardMemory` (`getCardMemory()`, reset in `initialize()`) is updated only from public events: `takeExposedDeck()` (pile cards go to `knownInHand`, red 3s skipped), `removeHumanTeamMelds()` (returned cards), `createMeld()`/`addCardsToMeld()`/`takeExposedDeck()` (melded hand cards are forgotten), `discard()` (forgotten + `discardedBy`). `Game::getUnseenCardsCounts(playerNumber)` returns, per `CardValue` index, how many cards the player cannot see: 8 per value (4 jokers) minus own hand, exposed pile, all melds and other players' `knownInHand`. AI code must use only these and never read other players' hands
+- **Probabilities** - `AiProbability(game, playerNumber)` is built per decision (cheap, 14 values): `drawProbability(v)` = unseen[v] / total unseen; `opponentHasPairProbability(opp, v)` = 1 with 2 known cards, otherwise a binomial estimate over the opponent's unknown hand cards (×0.3 if they discarded `v`); `cardGain(v)` (0 for threes, 25 magic, 40 extends a team meld, 30 makes a pair, 5 single); `redThreeDrawProbability()` (4 minus red 3s visible in melds and the exposed pile, over total unseen); `expectedDrawGain()` = Σ drawProbability × cardGain + redThreeDrawProbability × 50 (logged with the draw); `isDeadValue(v)` - a single natural in hand with no unseen cards left
 
 ## Rendering
 
@@ -188,6 +190,7 @@ canasta/
 ├── cardsdeck.*          # Deck management
 ├── meld.*               # Meld handling and validation
 ├── aiplayer.*           # AI turn phases, strategy modes and move rules
+├── aiprobability.*      # Probabilities of AI decisions (unseen cards, draws, opponents' pairs)
 ├── cardmemory.*         # Publicly known cards in hands and discards (used by the AI)
 ├── position.*           # Rectangle + coordinate conversion
 ├── roundresult.h        # Points of both teams in one round
