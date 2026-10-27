@@ -931,8 +931,28 @@ void Game::saveRoundResult(const RoundResult& roundResult) const {
     resultsFile.write(QJsonDocument(results).toJson());
 }
 
+void Game::clearRoundResults() const {
+    QFile resultsFile("results.json");
+    if (!resultsFile.open(QIODevice::WriteOnly)) {
+        printf("cannot write results.json\n");
+        return;
+    }
+    QJsonObject results;
+    results["rounds"] = QJsonArray();
+    resultsFile.write(QJsonDocument(results).toJson());
+}
+
 void Game::finishRound() {
     this->saveRoundResult(RoundResult(this->calculateTeamRoundScore(this->players[0]).getTotalPoints(), this->calculateTeamRoundScore(this->players[1]).getTotalPoints()));
+    this->restartRound();
+}
+
+void Game::startNewGame() {
+    this->clearRoundResults();
+    this->restartRound();
+}
+
+void Game::restartRound() {
     this->deleteCards();
     this->decks.clear();
     this->melds.clear();

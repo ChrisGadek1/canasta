@@ -59,6 +59,7 @@ class AiPlayer
 public:
     AiPlayer(int playerNumber, const AiWeights& weights) : playerNumber(playerNumber), weights(weights), randomEngine(static_cast<unsigned>(std::chrono::system_clock::now().time_since_epoch().count()) + playerNumber), phase(AiTurnPhase::DONE), strategy(AiStrategy::OPENING) {}
     int getPlayerNumber() const { return playerNumber; }
+    void setWeights(const AiWeights& weights) { this->weights = weights; }
     bool isPlayingTurn() const { return phase != AiTurnPhase::DONE; }
     void startTurn(Game& game);
     void step(Game& game);

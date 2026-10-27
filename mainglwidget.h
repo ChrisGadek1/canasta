@@ -53,6 +53,9 @@ class MainGLWidget : public QGLWidget
 public:
     explicit MainGLWidget(QWidget *parent = nullptr);
     ~MainGLWidget();
+    void startNewGame();
+    void clickOnPointsButton();
+    void setAiWeights(const AiWeights& aiWeights);
 
 protected:
     void initializeGL() override;
@@ -65,6 +68,8 @@ protected:
 private:
     Game game;
     std::vector<AiPlayer> aiPlayers;
+    AiWeights aiWeights = AiWeights::normal();
+    void createAiPlayers();
     bool aiStepScheduled = false;
     void scheduleAiStep();
     void playAiStep();
@@ -106,7 +111,6 @@ private:
     float pointsButtonGcolor = 57.0f;
     float pointsButtonBcolor = 55.0f;
     void setPointsButtonColor(float r, float g, float b);
-    void clickOnPointsButton();
     void showInsufficientInitialMeldsDialog();
     void showNoCanastaDialog();
     void showRoundEndDialog();

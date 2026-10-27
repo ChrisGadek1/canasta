@@ -46,6 +46,8 @@ class Game
     void initializeTeamMeldCardPositions(const Player& player);
     void deleteCards();
     void saveRoundResult(const RoundResult& roundResult) const;
+    void clearRoundResults() const;
+    void restartRound();
 public:
     Game(std::vector<Player> players, std::vector<CardsDeck> decks, int currentPlayerIndex, bool currentPlayerHasDrawnThisTurn, int humanPlayerCardPage): players(players), decks(decks), currentPlayerIndex(currentPlayerIndex), turnNumber(0), currentPlayerHasDrawnThisTurn(currentPlayerHasDrawnThisTurn), teamHasInitialMeld(), teamInitialMeldMinimumPoints(), teamHasMeldedInPreviousTurns(), roundFinishingPlayerNumber(-1), roundFinishedConcealed(false), roundFinishedByEmptyHiddenDeck(false), humanPlayerCardPage(humanPlayerCardPage) {}
     Game() : currentPlayerIndex(0), turnNumber(0), currentPlayerHasDrawnThisTurn(false), teamHasInitialMeld(), teamInitialMeldMinimumPoints(), teamHasMeldedInPreviousTurns(), roundFinishingPlayerNumber(-1), roundFinishedConcealed(false), roundFinishedByEmptyHiddenDeck(false), humanPlayerCardPage(0) {}
@@ -117,6 +119,7 @@ public:
     bool isRoundFinished() const { return roundFinishingPlayerNumber != -1 || roundFinishedByEmptyHiddenDeck; }
     TeamRoundScore calculateTeamRoundScore(const Player& player) const;
     void finishRound();
+    void startNewGame();
 
     // Pagination methods
     static constexpr int CARDS_PER_PAGE = 15;

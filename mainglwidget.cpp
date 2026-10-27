@@ -25,10 +25,38 @@ MainGLWidget::MainGLWidget(QWidget *parent)
     : QGLWidget(parent), game(), textureId(0), leftArrowTextureId(0), rightArrowTextureId(0), flipTextureId(0)
 {
     this->game.initialize();
-    for (auto &player : this->game.getPlayers()) {
-        this->aiPlayers.push_back(AiPlayer(player.getNumber(), AiWeights::normal()));
-    }
+    createAiPlayers();
     connect(&animationTimer, &QTimer::timeout, this, &MainGLWidget::animateCards);
+}
+
+void MainGLWidget::createAiPlayers() {
+    this->aiPlayers.clear();
+    for (auto &player : this->game.getPlayers()) {
+        this->aiPlayers.push_back(AiPlayer(player.getNumber(), this->aiWeights));
+    }
+}
+
+void MainGLWidget::setAiWeights(const AiWeights& aiWeights) {
+    this->aiWeights = aiWeights;
+    for (auto &aiPlayer : this->aiPlayers) {
+        aiPlayer.setWeights(aiWeights);
+    }
+}
+
+void MainGLWidget::startNewGame() {
+    QMessageBox newGameDialog(this);
+    newGameDialog.setWindowTitle(tr("Nowa gra"));
+    newGameDialog.setFont(QFont("Arial", 18));
+    newGameDialog.setText(tr("Czy na pewno chcesz rozpocząć nową grę?"));
+    QPushButton* newGameButton = newGameDialog.addButton(tr("Tak"), QMessageBox::AcceptRole);
+    newGameDialog.addButton(tr("Anuluj"), QMessageBox::RejectRole);
+    newGameDialog.exec();
+    if (newGameDialog.clickedButton() != newGameButton) return;
+    makeCurrent();
+    this->game.startNewGame();
+    loadCardsTextures();
+    createAiPlayers();
+    startAnimation();
 }
 
 void MainGLWidget::updateMeldsViewOnTurnChange() {
