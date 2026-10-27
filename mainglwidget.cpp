@@ -31,7 +31,15 @@ MainGLWidget::MainGLWidget(QWidget *parent)
     connect(&animationTimer, &QTimer::timeout, this, &MainGLWidget::animateCards);
 }
 
+void MainGLWidget::updateMeldsViewOnTurnChange() {
+    int currentPlayerIndex = this->game.getCurrentPlayerIndex();
+    if (currentPlayerIndex == meldsViewPlayerIndex) return;
+    meldsViewPlayerIndex = currentPlayerIndex;
+    showOpponentsMelds = currentPlayerIndex % 2 != 0;
+}
+
 void MainGLWidget::startAnimation() {
+    updateMeldsViewOnTurnChange();
     if (animationTimer.isActive()) return;
     animationClock.start();
     animationTimer.start(ANIMATION_FRAME_MS);

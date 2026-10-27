@@ -98,6 +98,8 @@ private:
     float meldButtonGcolor = 57.0f;
     float meldButtonBcolor = 55.0f;
     bool showOpponentsMelds = false;
+    int meldsViewPlayerIndex = 0;
+    void updateMeldsViewOnTurnChange();
     void setMeldButtonColor(float r, float g, float b);
     void clickOnMeldButton();
     float pointsButtonRcolor = 82.0f;

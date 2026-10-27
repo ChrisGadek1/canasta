@@ -79,7 +79,7 @@ Partner of player `n` is `(n + 2) % 4`.
 4. **Create meld** - "Melduj" button (enabled when `Game::canHumanPlayerMeld()`) → `MainGLWidget::clickOnMeldButton()` → `Game::meldHumanPlayerChosenCards()` → `createMeld()` creates a `Meld` owned by player 0 and partner 2 from the selected cards
 5. **Add to meld** - click an own-team meld with selected cards → `Game::canAddCardsToMeld()` / `Game::addCardsToMeld()`
 6. **Paginate hand** - arrows shown when hand > `Game::CARDS_PER_PAGE` (15)
-7. **Flip melds view** - flip button toggles `showOpponentsMelds` (own team vs. opponents' melds)
+7. **Flip melds view** - flip button toggles `showOpponentsMelds` (own team vs. opponents' melds). When the turn passes to the other partnership, `MainGLWidget::updateMeldsViewOnTurnChange()` (called in `startAnimation()`) switches the view to the current player's team melds
 
 All actions only work when `currentPlayerIndex == 0`. Selection state spans all pages (checks iterate the full hand, not only visible cards).
 
