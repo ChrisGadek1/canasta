@@ -123,6 +123,35 @@ void Card::draw(bool reverse, float angleDegrees) const
         glVertex2f(verts[i][0], verts[i][1]);
     }
     glEnd();
+
+    drawBorder(!reverse);
+}
+
+void Card::drawBorder(bool roundedCorners) const {
+    float width = drawPosition.right - drawPosition.left;
+    float height = drawPosition.top - drawPosition.down;
+    bool horizontal = width > height;
+    float radiusX = roundedCorners ? width * (horizontal ? cornerRadius * ratio : cornerRadius) : 0.f;
+    float radiusY = roundedCorners ? height * (horizontal ? cornerRadius : cornerRadius * ratio) : 0.f;
+    float cornerCenters[4][2] = {
+        { drawPosition.left + radiusX,  drawPosition.down + radiusY },
+        { drawPosition.right - radiusX, drawPosition.down + radiusY },
+        { drawPosition.right - radiusX, drawPosition.top - radiusY  },
+        { drawPosition.left + radiusX,  drawPosition.top - radiusY  }
+    };
+
+    glDisable(GL_TEXTURE_2D);
+    glColor3f(0.f, 0.f, 0.f);
+    glBegin(GL_LINE_LOOP);
+    for (int corner = 0; corner < 4; corner++) {
+        for (int segment = 0; segment <= cornerSegments; segment++) {
+            float rad = (180.0f + 90.0f * (corner + static_cast<float>(segment) / cornerSegments)) * M_PI / 180.0f;
+            glVertex2f(cornerCenters[corner][0] + radiusX * cos(rad), cornerCenters[corner][1] + radiusY * sin(rad));
+        }
+    }
+    glEnd();
+    glEnable(GL_TEXTURE_2D);
+    glColor3f(1.f, 1.f, 1.f);
 }
 
 

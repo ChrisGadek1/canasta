@@ -19,6 +19,7 @@ class Card
     float animationProgress = 1.0f;
     const void* animationContainer = nullptr;
     bool animationChangesContainer = false;
+    void drawBorder(bool roundedCorners) const;
 public:
     CardValue value;
     CardSuit suit;
@@ -39,6 +40,8 @@ public:
     void snapToPosition() { drawPosition = animationStart = animationTarget = position; animationProgress = 1.0f; }
     static constexpr float ratio = 0.68870523416;
     static constexpr float cardHeight = 0.3;
+    static constexpr float cornerRadius = 15.0f / 500.0f;
+    static constexpr int cornerSegments = 4;
     static const std::unordered_map<CardValue, int, std::hash<int>> pointsByValue;
     int getPoints() const { return pointsByValue.at(value); }
     static void loadReverseTexture();
