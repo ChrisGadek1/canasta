@@ -51,6 +51,7 @@ double AiProbability::opponentHasPairProbability(int opponentNumber, CardValue v
 int AiProbability::cardGain(CardValue value) const {
     if (value == CardValue::THREE) return 0;
     if (value == CardValue::TWO || value == CardValue::JOKER) return this->weights.magicCardGain;
+    if (this->game.hasFullMeldWithValue(value, this->game.getPlayers()[this->playerNumber])) return 0;
     if (this->game.hasMeldWithValue(value, this->game.getPlayers()[this->playerNumber])) return this->weights.extendingMeldGain;
     if (this->countNaturalCardsInHand(value) > 0) return this->weights.makingPairGain;
     return this->weights.singleCardGain;

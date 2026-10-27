@@ -16,13 +16,16 @@ class Meld
     bool hasAtLeastThreeTotalCards() const;
     bool magicCardsNotExceedingNonMagicCards() const;
     bool hasNoBlackThrees() const;
+    bool hasAtMostMaxSizeCards() const;
     bool isMagicCard(CardValue cardValue) const;
     int countMagicCards() const;
     void moveMagicCardsToFront();
  public:
     Meld(CardValue value, const std::vector<Player>& owners, bool redThrees = false) : value(value), owners(owners), redThrees(redThrees) {}
     static constexpr int CANASTA_SIZE = 7;
+    static constexpr int MAX_SIZE = 8;
     bool isRedThreesMeld() const { return redThrees; }
+    bool isFull() const { return !redThrees && static_cast<int>(cards.size()) >= MAX_SIZE; }
     bool isCanasta() const { return !redThrees && static_cast<int>(cards.size()) >= CANASTA_SIZE; }
     bool isNaturalCanasta() const { return isCanasta() && countMagicCards() == 0; }
     bool isMagicCardsCanasta() const { return isCanasta() && countMagicCards() == static_cast<int>(cards.size()); }

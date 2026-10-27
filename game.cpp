@@ -219,6 +219,13 @@ bool Game::hasMeldWithValue(CardValue value, const Player& player) const {
     return false;
 }
 
+bool Game::hasFullMeldWithValue(CardValue value, const Player& player) const {
+    for (const auto& meld : melds) {
+        if (!meld.isRedThreesMeld() && meld.getValue() == value && meld.isOwnedBy(player)) return meld.isFull();
+    }
+    return false;
+}
+
 void Game::drawFromHiddenDeck(int playerNumber) {
     if (currentPlayerIndex != playerNumber || currentPlayerHasDrawnThisTurn) return;
 

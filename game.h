@@ -61,6 +61,7 @@ public:
     std::vector<Player>& getPlayers();
     std::vector<Meld>& getMelds();
     bool hasMeldWithValue(CardValue value, const Player& player) const;
+    bool hasFullMeldWithValue(CardValue value, const Player& player) const;
     CardsDeck& getHiddenDeck();
     CardsDeck& getExposedDeck();
     CardsDeck& getPlayerDeck(int playerNumber);

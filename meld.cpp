@@ -35,6 +35,7 @@ CardValue Meld::baseValue(const std::vector<Card*>& cards) {
 }
 
 bool Meld::valid() const {
+    if (!hasAtMostMaxSizeCards()) return false;
     if (!this->cards.empty() && countMagicCards() == static_cast<int>(this->cards.size())) {
         if (static_cast<int>(this->cards.size()) < CANASTA_SIZE) {
             printf("cannot meld - magic cards meld must be a complete canasta \n");
@@ -115,6 +116,14 @@ bool Meld::hasNoBlackThrees() const {
             printf("cannot meld - black threes cannot be melded \n");
             return false;
         }
+    }
+    return true;
+}
+
+bool Meld::hasAtMostMaxSizeCards() const {
+    if (static_cast<int>(this->cards.size()) > MAX_SIZE) {
+        printf("cannot meld - meld cannot have more than %d cards \n", MAX_SIZE);
+        return false;
     }
     return true;
 }

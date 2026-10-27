@@ -137,7 +137,7 @@ double AiPlayer::scoreTakingExposedDeck(Game& game, const AiProbability& probabi
         score += this->weights.pileCardScore;
         if (card->isMagic()) {
             score += this->weights.magicPileCardScore;
-        } else if (card == topCard || (!card->isBlackThree() && (game.hasMeldWithValue(card->value, player) || naturalCounts[card->value] >= 2))) {
+        } else if (card == topCard || (!card->isBlackThree() && !game.hasFullMeldWithValue(card->value, player) && (game.hasMeldWithValue(card->value, player) || naturalCounts[card->value] >= 2))) {
             score += this->weights.usefulPileCardScore;
         } else {
             junkCardsCount++;
@@ -222,7 +222,7 @@ void AiPlayer::planOpeningMelds(Game& game) {
     }
     for (auto& meldCards : melds) {
         while (points < minimumPoints && usedMagicCardsCount < this->weights.maxOpeningMagicCards && usedMagicCardsCount < static_cast<int>(magicCards.size()) && capacity > 0
-               && 2 * countMagicCards(meldCards) < static_cast<int>(meldCards.size())) {
+               && 2 * countMagicCards(meldCards) < static_cast<int>(meldCards.size()) && static_cast<int>(meldCards.size()) < Meld::MAX_SIZE) {
             Card* magicCard = magicCards[usedMagicCardsCount++];
             meldCards.push_back(magicCard);
             capacity--;
@@ -250,18 +250,20 @@ std::vector<AiPlayer::MeldAction> AiPlayer::findMeldActions(Game& game) {
         const Meld& meld = melds[meldIndex];
         if (meld.isRedThreesMeld() || !meld.isOwnedBy(player)) continue;
         int meldSize = static_cast<int>(meld.getCards().size());
+        int meldCapacity = std::min(capacity, Meld::MAX_SIZE - meldSize);
+        if (meldCapacity <= 0) continue;
         int meldMagicCardsCount = countMagicCards(meld.getCards());
         bool magicCardsMeld = meldMagicCardsCount == meldSize;
 
         auto group = groups.find(meld.getValue());
         if (!magicCardsMeld && group != groups.end()) {
             std::vector<Card*> cards = group->second;
-            if (static_cast<int>(cards.size()) > capacity) cards.resize(capacity);
+            if (static_cast<int>(cards.size()) > meldCapacity) cards.resize(meldCapacity);
             actions.push_back(MeldAction{meldIndex, cards, this->noisy(this->scoreMeldAction(game, meldIndex, cards))});
         }
 
         int magicSlots = magicCardsMeld ? static_cast<int>(magicCards.size()) : meldSize - 2 * meldMagicCardsCount;
-        int magicCardsCount = std::min(std::min(magicSlots, static_cast<int>(magicCards.size())), capacity);
+        int magicCardsCount = std::min(std::min(magicSlots, static_cast<int>(magicCards.size())), meldCapacity);
         int missingForCanasta = Meld::CANASTA_SIZE - meldSize;
         if (!this->canDumpCards() && missingForCanasta > 0 && missingForCanasta <= magicCardsCount) {
             magicCardsCount = missingForCanasta;
@@ -288,6 +290,7 @@ std::vector<AiPlayer::MeldAction> AiPlayer::findMeldActions(Game& game) {
     }
 
     if (static_cast<int>(magicCards.size()) >= Meld::CANASTA_SIZE && static_cast<int>(magicCards.size()) <= capacity && !game.hasMeldWithValue(CardValue::JOKER, player)) {
+        if (static_cast<int>(magicCards.size()) > Meld::MAX_SIZE) magicCards.resize(Meld::MAX_SIZE);
         actions.push_back(MeldAction{-1, magicCards, this->noisy(this->scoreMeldAction(game, -1, magicCards))});
     }
     return actions;
@@ -356,7 +359,9 @@ double AiPlayer::getKeepValue(Game& game, const AiProbability& probability, cons
     } else {
         std::vector<Card*>& handCards = this->getHandCards(game);
         int sameValueCount = static_cast<int>(std::count_if(handCards.begin(), handCards.end(), [card](const Card* handCard) { return !handCard->isMagic() && handCard->value == card->value; }));
-        if (sameValueCount >= 2) {
+        if (game.hasFullMeldWithValue(card->value, this->getPlayer(game))) {
+            keepValue = 0.0;
+        } else if (sameValueCount >= 2) {
             keepValue = this->weights.pairKeepValue + this->weights.extraCardKeepValue * (sameValueCount - 2);
         } else {
             keepValue = probability.isDeadValue(card->value) ? 0.0 : this->weights.singleKeepValue;
@@ -371,6 +376,7 @@ double AiPlayer::getKeepValue(Game& game, const AiProbability& probability, cons
 double AiPlayer::getDanger(Game& game, const AiProbability& probability, const Card* card) {
     if (card->isBlackThree() || card->isMagic()) return 0.0;
     int nextPlayerNumber = (this->playerNumber + 1) % 4;
+    if (game.hasFullMeldWithValue(card->value, game.getPlayers()[nextPlayerNumber])) return 0.0;
     const CardMemory& cardMemory = game.getCardMemory();
     bool exposedDeckFrozen = game.isExposedDeckFrozen();
     int knownCount = cardMemory.getKnownInHand(nextPlayerNumber, card->value, this->getMemorySinceTurn(game));
