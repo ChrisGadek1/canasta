@@ -16,3 +16,10 @@ Position Position::toPx(float left, float down, float top, float right, int vw, 
 Position Position::rotateCW90(const Position& pos) {
     return Position(pos.down, -pos.right, -pos.left, pos.top);
 }
+
+Position Position::lerp(const Position& from, const Position& to, float progress) {
+    return Position(from.left + (to.left - from.left) * progress,
+                    from.down + (to.down - from.down) * progress,
+                    from.top + (to.top - from.top) * progress,
+                    from.right + (to.right - from.right) * progress);
+}

@@ -1,6 +1,7 @@
 #include "card.h"
 #include "player.h"
 #include <string>
+#include <algorithm>
 #include <QDebug>
 #include <QImage>
 #include <QtOpenGL>
@@ -92,10 +93,10 @@ void Card::draw(bool reverse, float angleDegrees) const
     glBindTexture(GL_TEXTURE_2D, texture);
 
     float verts[4][2] = {
-        { position.left,  position.down },
-        { position.right, position.down },
-        { position.right, position.top  },
-        { position.left,  position.top  }
+        { drawPosition.left,  drawPosition.down },
+        { drawPosition.right, drawPosition.down },
+        { drawPosition.right, drawPosition.top  },
+        { drawPosition.left,  drawPosition.top  }
     };
 
     float tex[4][2] = {
@@ -125,6 +126,18 @@ void Card::draw(bool reverse, float angleDegrees) const
 }
 
 
+bool Card::advanceAnimation(const Position& target, float progressDelta) {
+    if (!(target == animationTarget)) {
+        animationStart = drawPosition;
+        animationTarget = target;
+        animationProgress = 0.0f;
+    }
+    if (!isAnimating()) return false;
+    animationProgress = std::min(1.0f, animationProgress + progressDelta);
+    float easedProgress = 1 - (1 - animationProgress) * (1 - animationProgress);
+    drawPosition = Position::lerp(animationStart, animationTarget, easedProgress);
+    return isAnimating();
+}
 
 void Card::loadReverseTexture() {
     QString path = QString(":/images/images/cards/card_reverse.png");

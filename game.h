@@ -41,6 +41,8 @@ class Game
     void finishTurnIfCurrentPlayerHasNoCards();
     std::vector<Card*> getHumanPlayerChosenCards();
     static Position exposedDeckPosition(bool rotated = false);
+    static Position hiddenDeckPosition();
+    void initializeHumanPlayerPageCardsPositions(const std::vector<Card*>& cards);
     void initializeTeamMeldCardPositions(const Player& player);
     void deleteCards();
     void saveRoundResult(const RoundResult& roundResult) const;

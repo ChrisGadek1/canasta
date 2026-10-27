@@ -1,5 +1,6 @@
 #include "mainglwidget.h"
 #include <QDebug>
+#include <algorithm>
 #include <QImage>
 #include <QtOpenGL>
 #include "card.h"
@@ -27,10 +28,42 @@ MainGLWidget::MainGLWidget(QWidget *parent)
     for (auto &player : this->game.getPlayers()) {
         this->aiPlayers.push_back(AiPlayer(player.getNumber(), AiWeights::normal()));
     }
+    connect(&animationTimer, &QTimer::timeout, this, &MainGLWidget::animateCards);
+}
+
+void MainGLWidget::startAnimation() {
+    if (animationTimer.isActive()) return;
+    animationClock.start();
+    animationTimer.start(ANIMATION_FRAME_MS);
+}
+
+void MainGLWidget::animateCards() {
+    qint64 elapsedMs = std::min<qint64>(animationClock.restart(), MAX_ANIMATION_FRAME_STEP_MS);
+    float progressDelta = static_cast<float>(elapsedMs) / CARD_ANIMATION_DURATION_MS;
+    bool anyCardAnimating = false;
+    for (auto &deck : this->game.getDecks()) {
+        for (auto *card : deck.getCards()) {
+            anyCardAnimating |= card->advanceAnimation(card->position, progressDelta);
+        }
+    }
+    for (auto &meld : this->game.getMelds()) {
+        bool opponentsMeld = !meld.isOwnedBy(this->game.getPlayers()[0]);
+        for (auto *card : meld.getCards()) {
+            anyCardAnimating |= card->advanceAnimation(opponentsMeld ? Position::rotateCW90(card->position) : card->position, progressDelta);
+        }
+    }
+    update();
+    if (anyCardAnimating) return;
+    animationTimer.stop();
+    if (this->game.isRoundFinished()) {
+        showRoundEndDialog();
+    } else {
+        scheduleAiStep();
+    }
 }
 
 void MainGLWidget::scheduleAiStep() {
-    if (aiStepScheduled || this->game.isRoundFinished() || this->game.getCurrentPlayer()->getIsHumanControlled()) return;
+    if (aiStepScheduled || animationTimer.isActive() || this->game.isRoundFinished() || this->game.getCurrentPlayer()->getIsHumanControlled()) return;
     aiStepScheduled = true;
     QTimer::singleShot(AI_STEP_DELAY_MS, this, &MainGLWidget::playAiStep);
 }
@@ -43,11 +76,7 @@ void MainGLWidget::playAiStep() {
         aiPlayer.startTurn(this->game);
     }
     aiPlayer.step(this->game);
-    update();
-    if (this->game.isRoundFinished()) {
-        showRoundEndDialog();
-    }
-    scheduleAiStep();
+    startAnimation();
 }
 
 MainGLWidget::~MainGLWidget()
@@ -145,6 +174,7 @@ void MainGLWidget::initializeGL()
     }
 
     setMouseTracking(true);
+    startAnimation();
 }
 
 void MainGLWidget::resizeGL(int w, int h)
@@ -240,7 +270,7 @@ void MainGLWidget::showRoundEndDialog() {
     makeCurrent();
     this->game.finishRound();
     loadCardsTextures();
-    update();
+    startAnimation();
 }
 
 void MainGLWidget::clickOnPointsButton() {
@@ -405,11 +435,7 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
             update();
         }
     }
-    if (this->game.isRoundFinished()) {
-        update();
-        showRoundEndDialog();
-    }
-    scheduleAiStep();
+    startAnimation();
 }
 
 #include <QFont>
@@ -646,15 +672,28 @@ void MainGLWidget::paintGL()
             glTexCoord2f(0, 1); glVertex2f(-1, 1);
         glEnd();
     }
+    struct CardDrawing {
+        Card* card;
+        bool reverse;
+        float angle;
+    };
+    std::vector<CardDrawing> animatingCards;
+    auto drawCard = [&animatingCards](Card* card, bool reverse, float angle, bool visible) {
+        if (card->isAnimating()) {
+            animatingCards.push_back({card, reverse, angle});
+        } else if (visible) {
+            card->draw(reverse, angle);
+        }
+    };
     for(auto &deck: this->game.getDecks()) {
         if(deck.getType() == PLAYERS_OWNED) {
-            std::vector<Card*> cardsToRender;
+            std::vector<Card*> visibleCards;
             if (deck.getPlayer().getNumber() == 0) {
-                cardsToRender = this->game.getVisibleCards(deck.getCards());
+                visibleCards = this->game.getVisibleCards(deck.getCards());
             } else {
-                cardsToRender = deck.getCards();
+                visibleCards = deck.getCards();
             }
-            for(auto &card: cardsToRender) {
+            for(auto &card: deck.getCards()) {
                 int angle;
                 switch(deck.getPlayer().getNumber()) {
                     case 0:
@@ -670,32 +709,29 @@ void MainGLWidget::paintGL()
                         angle = 90;
                         break;
                 }
-                card->draw(!deck.getPlayer().getIsHumanControlled(), angle);
+                bool visible = std::find(visibleCards.begin(), visibleCards.end(), card) != visibleCards.end();
+                drawCard(card, !deck.getPlayer().getIsHumanControlled(), angle, visible);
             }
         }
         else if (deck.getType() == EXPOSED) {
             for (auto &card: deck.getCards()) {
-                card->draw(false, card->freezesExposedDeck() ? 90 : 0);
+                drawCard(card, false, card->freezesExposedDeck() ? 90 : 0, true);
             }
         }
         else {
             for (auto &card: deck.getCards()) {
-                card->draw(true, 0);
+                drawCard(card, true, 0, true);
             }
         }
     }
     for (auto &meld : this->game.getMelds()) {
-        if (meld.isOwnedBy(this->game.getPlayers()[0]) == showOpponentsMelds) continue;
+        bool opponentsMeld = !meld.isOwnedBy(this->game.getPlayers()[0]);
         for(auto &card: meld.getCards()) {
-            if (showOpponentsMelds) {
-                Position originalPos = card->position;
-                card->position = Position::rotateCW90(card->position);
-                card->draw(false, 90);
-                card->position = originalPos;
-            } else {
-                card->draw(false, 0);
-            }
+            drawCard(card, false, opponentsMeld ? 90 : 0, opponentsMeld == showOpponentsMelds);
         }
+    }
+    for (auto &cardDrawing : animatingCards) {
+        cardDrawing.card->draw(cardDrawing.reverse, cardDrawing.angle);
     }
     if (shouldShowLeftArrow())
         drawLeftArrowButton();

@@ -92,6 +92,10 @@ void Game::generateDecks() {
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine e(seed);
     std::shuffle(std::begin(initialCards), std::end(initialCards), e);
+    for (auto &card : initialCards) {
+        card->position = hiddenDeckPosition();
+        card->snapToPosition();
+    }
 
     std::vector<CardsDeck> playersDecks;
 
@@ -118,12 +122,6 @@ void Game::generateDecks() {
         initialCards.pop_back();
     }
     exposedDeck.addCard(initialCard);
-
-    for (auto &card: initialCards) {
-        constexpr float hiddenBottomPos = 0.65f;
-        constexpr float hiddenRightPos = -0.65f;
-        card->position = Position(hiddenRightPos - Card::cardHeight * Card::ratio, hiddenBottomPos, hiddenBottomPos + Card::cardHeight, hiddenRightPos);
-    }
 
     CardsDeck hiddenDeck(CardsDeckType::HIDDEN, initialCards);
 
@@ -194,6 +192,12 @@ Position Game::exposedDeckPosition(bool rotated) {
     float centerX = Game::exposedLeftPos + cardWidth / 2;
     float centerY = Game::exposedBottomPos + Card::cardHeight / 2;
     return Position(centerX - Card::cardHeight / 2, centerY - cardWidth / 2, centerY + cardWidth / 2, centerX + Card::cardHeight / 2);
+}
+
+Position Game::hiddenDeckPosition() {
+    constexpr float hiddenBottomPos = 0.65f;
+    constexpr float hiddenRightPos = -0.65f;
+    return Position(hiddenRightPos - Card::cardHeight * Card::ratio, hiddenBottomPos, hiddenBottomPos + Card::cardHeight, hiddenRightPos);
 }
 
 CardsDeck& Game::getHiddenDeck() {
@@ -716,39 +720,19 @@ void Game::initializeCardsPositions() {
             std::vector<Card *> cards = this->decks[deckI].getCards();
             int playerNum = this->decks[deckI].getPlayer().getNumber();
 
-            // For human player, only position visible cards
             if (playerNum == 0) {
                 humanPlayerCardPage = std::min(humanPlayerCardPage, std::max(0, getTotalPages(cards) - 1));
-                cards = this->getVisibleCards(cards);
+                for (size_t pageStart = 0; pageStart < cards.size(); pageStart += CARDS_PER_PAGE) {
+                    size_t pageEnd = std::min(pageStart + CARDS_PER_PAGE, cards.size());
+                    this->initializeHumanPlayerPageCardsPositions(std::vector<Card*>(cards.begin() + pageStart, cards.begin() + pageEnd));
+                }
+                continue;
             }
 
             int n = cards.size();
             if (n == 0) continue;
 
-            if (playerNum == 0) {
-                // dół
-                float startingX = - (1 - margin);
-                float endX = (1 - margin);
-                float bottomY = - 0.9f;
-                float topY = - 0.9f + cardHeight;
-                float cardWidth = (topY - bottomY) * Card::ratio;
-                float offsetX = (endX - startingX - cardWidth) / std::max(1, n - 1);
-
-                for (int cardI = 0; cardI < n; cardI++) {
-                    cards[cardI]->position.setLeft(startingX);
-                    cards[cardI]->position.setRight(startingX + cardWidth);
-                    cards[cardI]->position.setTop(topY);
-                    cards[cardI]->position.setDown(bottomY);
-                    if (cards[cardI]->isChosen()) {
-                        cards[cardI]->position.setTop(topY + 0.06f);
-                        cards[cardI]->position.setDown(bottomY + 0.06f);
-                    }
-                    startingX += offsetX;
-                    cards[cardI]->above = cardI < n - 1 ? cards[cardI + 1] : nullptr;
-                    cards[cardI]->behind = cardI > 0 ? cards[cardI - 1] : nullptr;
-                }
-            }
-            else if (playerNum == 2) {
+            if (playerNum == 2) {
                 // góra
                 float startingX = - (1 - margin);
                 float endX = (1 - margin);
@@ -800,6 +784,32 @@ void Game::initializeCardsPositions() {
                 }
             }
         }
+    }
+}
+
+void Game::initializeHumanPlayerPageCardsPositions(const std::vector<Card*>& cards) {
+    // dół
+    float margin = 0.4f;
+    float startingX = - (1 - margin);
+    float endX = (1 - margin);
+    float bottomY = - 0.9f;
+    float topY = - 0.9f + Card::cardHeight;
+    float cardWidth = (topY - bottomY) * Card::ratio;
+    int n = cards.size();
+    float offsetX = (endX - startingX - cardWidth) / std::max(1, n - 1);
+
+    for (int cardI = 0; cardI < n; cardI++) {
+        cards[cardI]->position.setLeft(startingX);
+        cards[cardI]->position.setRight(startingX + cardWidth);
+        cards[cardI]->position.setTop(topY);
+        cards[cardI]->position.setDown(bottomY);
+        if (cards[cardI]->isChosen()) {
+            cards[cardI]->position.setTop(topY + 0.06f);
+            cards[cardI]->position.setDown(bottomY + 0.06f);
+        }
+        startingX += offsetX;
+        cards[cardI]->above = cardI < n - 1 ? cards[cardI + 1] : nullptr;
+        cards[cardI]->behind = cardI > 0 ? cards[cardI - 1] : nullptr;
     }
 }
 

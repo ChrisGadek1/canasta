@@ -2,13 +2,20 @@
 #define MAINGLWIDGET_H
 
 #include <QGLWidget>
+#include <QElapsedTimer>
 #include <QImage>
+#include <QTimer>
 #include "card.h"
 #include <vector>
 #include "game.h"
 #include "aiplayer.h"
 
 static constexpr int AI_STEP_DELAY_MS = 600;
+
+// Card animation constants
+static constexpr int CARD_ANIMATION_DURATION_MS = 500;
+static constexpr int ANIMATION_FRAME_MS = 16;
+static constexpr int MAX_ANIMATION_FRAME_STEP_MS = 50;
 
 // Arrow button constants
 static constexpr float ARROW_SIZE = 0.1f;
@@ -61,6 +68,10 @@ private:
     bool aiStepScheduled = false;
     void scheduleAiStep();
     void playAiStep();
+    QTimer animationTimer;
+    QElapsedTimer animationClock;
+    void startAnimation();
+    void animateCards();
     GLuint textureId;
     GLuint leftArrowTextureId;
     GLuint rightArrowTextureId;

@@ -13,6 +13,10 @@ class Card
 {
     GLuint textureId;
     bool chosen = false;
+    Position drawPosition;
+    Position animationStart;
+    Position animationTarget;
+    float animationProgress = 1.0f;
 public:
     CardValue value;
     CardSuit suit;
@@ -20,13 +24,16 @@ public:
     Card* above = nullptr;
     Card* behind = nullptr;
     static GLuint reverseTextureId;
-    Card(CardValue value, CardSuit suit): textureId(0), value(value), suit(suit), position(Position(0, 0, 0, 0)) {}
+    Card(CardValue value, CardSuit suit): textureId(0), drawPosition(Position(0, 0, 0, 0)), animationStart(Position(0, 0, 0, 0)), animationTarget(Position(0, 0, 0, 0)), value(value), suit(suit), position(Position(0, 0, 0, 0)) {}
     ~Card() {
         glDeleteTextures(1, &textureId);
     }
     std::string texturePath() const;
     void loadTexture();
     void draw(bool reverse, float angleDegrees) const;
+    bool isAnimating() const { return animationProgress < 1.0f; }
+    bool advanceAnimation(const Position& target, float progressDelta);
+    void snapToPosition() { drawPosition = animationStart = animationTarget = position; animationProgress = 1.0f; }
     static constexpr float ratio = 0.68870523416;
     static constexpr float cardHeight = 0.3;
     static const std::unordered_map<CardValue, int, std::hash<int>> pointsByValue;
