@@ -17,6 +17,8 @@ class Card
     Position animationStart;
     Position animationTarget;
     float animationProgress = 1.0f;
+    const void* animationContainer = nullptr;
+    bool animationChangesContainer = false;
 public:
     CardValue value;
     CardSuit suit;
@@ -32,7 +34,8 @@ public:
     void loadTexture();
     void draw(bool reverse, float angleDegrees) const;
     bool isAnimating() const { return animationProgress < 1.0f; }
-    bool advanceAnimation(const Position& target, float progressDelta);
+    bool isMovingBetweenContainers() const { return isAnimating() && animationChangesContainer; }
+    bool advanceAnimation(const Position& target, const void* container, float progressDelta);
     void snapToPosition() { drawPosition = animationStart = animationTarget = position; animationProgress = 1.0f; }
     static constexpr float ratio = 0.68870523416;
     static constexpr float cardHeight = 0.3;

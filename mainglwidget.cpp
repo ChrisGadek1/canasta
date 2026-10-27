@@ -51,13 +51,13 @@ void MainGLWidget::animateCards() {
     bool anyCardAnimating = false;
     for (auto &deck : this->game.getDecks()) {
         for (auto *card : deck.getCards()) {
-            anyCardAnimating |= card->advanceAnimation(card->position, progressDelta);
+            anyCardAnimating |= card->advanceAnimation(card->position, &deck, progressDelta);
         }
     }
     for (auto &meld : this->game.getMelds()) {
         bool opponentsMeld = !meld.isOwnedBy(this->game.getPlayers()[0]);
         for (auto *card : meld.getCards()) {
-            anyCardAnimating |= card->advanceAnimation(opponentsMeld ? Position::rotateCW90(card->position) : card->position, progressDelta);
+            anyCardAnimating |= card->advanceAnimation(opponentsMeld ? Position::rotateCW90(card->position) : card->position, &meld, progressDelta);
         }
     }
     update();
@@ -687,7 +687,7 @@ void MainGLWidget::paintGL()
     };
     std::vector<CardDrawing> animatingCards;
     auto drawCard = [&animatingCards](Card* card, bool reverse, float angle, bool visible) {
-        if (card->isAnimating()) {
+        if (card->isMovingBetweenContainers()) {
             animatingCards.push_back({card, reverse, angle});
         } else if (visible) {
             card->draw(reverse, angle);

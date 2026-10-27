@@ -126,12 +126,14 @@ void Card::draw(bool reverse, float angleDegrees) const
 }
 
 
-bool Card::advanceAnimation(const Position& target, float progressDelta) {
+bool Card::advanceAnimation(const Position& target, const void* container, float progressDelta) {
     if (!(target == animationTarget)) {
         animationStart = drawPosition;
         animationTarget = target;
         animationProgress = 0.0f;
+        animationChangesContainer = container != animationContainer;
     }
+    animationContainer = container;
     if (!isAnimating()) return false;
     animationProgress = std::min(1.0f, animationProgress + progressDelta);
     float easedProgress = 1 - (1 - animationProgress) * (1 - animationProgress);
