@@ -10,10 +10,10 @@
 #include "game.h"
 #include "aiplayer.h"
 
-static constexpr int AI_STEP_DELAY_MS = 600;
+static constexpr int AI_STEP_DELAY_MS = 1000;
 
 // Card animation constants
-static constexpr int CARD_ANIMATION_DURATION_MS = 500;
+static constexpr int CARD_ANIMATION_DURATION_MS = 800;
 static constexpr int ANIMATION_FRAME_MS = 16;
 static constexpr int MAX_ANIMATION_FRAME_STEP_MS = 50;
 
@@ -113,6 +113,8 @@ private:
     void setPointsButtonColor(float r, float g, float b);
     void showInsufficientInitialMeldsDialog();
     void showNoCanastaDialog();
+    void showIllegalMoveDialog(IllegalMove illegalMove);
+    QString getIllegalMoveMessage(IllegalMove illegalMove);
     void showRoundEndDialog();
     QStringList getTeamsNames();
 };

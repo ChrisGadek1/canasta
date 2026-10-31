@@ -326,7 +326,7 @@ bool Game::canTakeExposedDeck(int playerNumber, const std::vector<Card*>& cards)
     Card* topCard = exposedCards.back();
     if (topCard->isMagic() || topCard->isBlackThree()) return false;
     Meld* teamMeld = this->findTeamMeld(topCard->value, this->players[playerNumber]);
-    if (cards.empty()) return !isExposedDeckFrozen() && teamMeld != nullptr;
+    if (cards.empty()) return !isExposedDeckFrozen() && teamMeld != nullptr && !teamMeld->isFull();
     long matchingCardsCount = std::count_if(cards.begin(), cards.end(), [topCard](const Card* card) { return card->value == topCard->value; });
     if (matchingCardsCount < 2) return false;
     std::vector<Card*> meldCards = cards;
@@ -635,6 +635,110 @@ void Game::addCardsToMeld(int playerNumber, int meldIndex, const std::vector<Car
 
 void Game::addCardsToMeld(int meldIndex) {
     addCardsToMeld(0, meldIndex, this->getHumanPlayerChosenCards());
+}
+
+bool Game::mouseOverOpponentsMeld(int vw, int vh, int x, int y) const {
+    for (const auto& meld : this->melds) {
+        if (meld.isOwnedBy(this->players[0])) continue;
+        for (const auto* card : meld.getCards()) {
+            Position rotatedPos = Position::rotateCW90(card->position);
+            Position cardPos = Position::toPx(rotatedPos.left, rotatedPos.down, rotatedPos.top, rotatedPos.right, vw, vh);
+            if (cardPos.down > y && cardPos.top < y && cardPos.left < x && cardPos.right > x) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+IllegalMove Game::getHumanPlayerDrawIllegalMove() const {
+    if (currentPlayerIndex != 0) return NOT_PLAYERS_TURN;
+    if (currentPlayerHasDrawnThisTurn) return ALREADY_DRAWN;
+    return NO_ILLEGAL_MOVE;
+}
+
+IllegalMove Game::getHumanPlayerMeldIllegalMove() {
+    if (currentPlayerIndex != 0) return NOT_PLAYERS_TURN;
+    std::vector<Card*> chosenCards = this->getHumanPlayerChosenCards();
+    if (chosenCards.empty()) return NO_CARDS_CHOSEN_TO_MELD;
+    Meld meld(Meld::baseValue(chosenCards), this->getMeldOwners(0));
+    for (auto* card : chosenCards) {
+        meld.addCard(card);
+    }
+    IllegalMove meldError = meld.validationError();
+    if (meldError != NO_ILLEGAL_MOVE) return meldError;
+    if (hasMeldWithValue(meld.getValue(), this->players[0])) return MELD_VALUE_ALREADY_EXISTS;
+    if (!currentPlayerHasDrawnThisTurn) return NOT_DRAWN_YET;
+    return NO_ILLEGAL_MOVE;
+}
+
+IllegalMove Game::getHumanPlayerAddCardsToMeldIllegalMove(int meldIndex) {
+    if (currentPlayerIndex != 0) return NOT_PLAYERS_TURN;
+    std::vector<Card*> chosenCards = this->getHumanPlayerChosenCards();
+    if (chosenCards.empty()) return NO_CARDS_CHOSEN_TO_ADD;
+    const Meld& meld = this->melds[meldIndex];
+    if (meld.isRedThreesMeld()) return CARDS_NOT_MATCHING_MELD;
+    if (meld.isFull()) return MELD_FULL;
+    switch (meld.addingCardsValidationError(chosenCards)) {
+    case NO_ILLEGAL_MOVE:
+        break;
+    case BLACK_THREE:
+        return BLACK_THREE;
+    case MELD_TOO_LARGE:
+        return MELD_TOO_LARGE;
+    case TOO_MANY_MAGIC_CARDS:
+        return TOO_MANY_MAGIC_CARDS_AFTER_ADDING;
+    default:
+        return CARDS_NOT_MATCHING_MELD;
+    }
+    if (!currentPlayerHasDrawnThisTurn) return NOT_DRAWN_YET;
+    return NO_ILLEGAL_MOVE;
+}
+
+IllegalMove Game::getHumanPlayerExposedDeckClickIllegalMove() {
+    if (currentPlayerIndex != 0) return NOT_PLAYERS_TURN;
+    std::vector<Card*> chosenCards = this->getHumanPlayerChosenCards();
+    std::vector<Card*>& exposedCards = this->getExposedDeck().getCards();
+    Card* topCard = exposedCards.empty() ? nullptr : exposedCards.back();
+    long matchingCardsCount = topCard ? std::count_if(chosenCards.begin(), chosenCards.end(), [topCard](const Card* card) { return card->value == topCard->value; }) : 0;
+    if (currentPlayerHasDrawnThisTurn) {
+        if (chosenCards.empty()) return DISCARD_NOTHING_CHOSEN;
+        if (chosenCards.size() == 1) return NO_ILLEGAL_MOVE;
+        return matchingCardsCount >= 2 ? EXPOSED_DECK_ALREADY_DRAWN : DISCARD_TOO_MANY_CHOSEN;
+    }
+    if (chosenCards.size() == 1 && matchingCardsCount == 0) return DISCARD_NOT_DRAWN_YET;
+    if (!topCard) return EXPOSED_DECK_EMPTY;
+    if (topCard->isMagic()) return EXPOSED_DECK_MAGIC_TOP_CARD;
+    if (topCard->isBlackThree()) return EXPOSED_DECK_BLACK_THREE_TOP_CARD;
+    Meld* teamMeld = this->findTeamMeld(topCard->value, this->players[0]);
+    if (chosenCards.empty()) {
+        if (isExposedDeckFrozen()) return EXPOSED_DECK_FROZEN_NOTHING_CHOSEN;
+        if (!teamMeld) return EXPOSED_DECK_NOTHING_CHOSEN;
+        return teamMeld->isFull() ? EXPOSED_DECK_MELD_FULL : NO_ILLEGAL_MOVE;
+    }
+    if (matchingCardsCount < 2) return EXPOSED_DECK_TOO_FEW_NATURAL_CARDS;
+    std::vector<Card*> meldCards = chosenCards;
+    meldCards.push_back(topCard);
+    if (teamMeld) {
+        if (teamMeld->isFull()) return EXPOSED_DECK_MELD_FULL;
+        return teamMeld->canAddCards(meldCards) ? NO_ILLEGAL_MOVE : EXPOSED_DECK_INVALID_MELD;
+    }
+    Meld newMeld(topCard->value, this->getMeldOwners(0));
+    for (auto* card : meldCards) {
+        newMeld.addCard(card);
+    }
+    if (!newMeld.valid()) return EXPOSED_DECK_INVALID_MELD;
+    if (!hasTeamInitialMeld(0) && newMeld.getPoints() < getTeamInitialMeldMinimumPoints(0)) return EXPOSED_DECK_INSUFFICIENT_INITIAL_MELD;
+    return NO_ILLEGAL_MOVE;
+}
+
+int Game::getHumanPlayerExposedDeckMeldPoints() {
+    std::vector<Card*>& exposedCards = this->getExposedDeck().getCards();
+    int points = exposedCards.empty() ? 0 : exposedCards.back()->getPoints();
+    for (auto* card : this->getHumanPlayerChosenCards()) {
+        points += card->getPoints();
+    }
+    return points;
 }
 
 void Game::initializeMeldCardPositions() {

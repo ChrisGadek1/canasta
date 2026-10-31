@@ -31,6 +31,7 @@ add_executable(canasta MACOSX_BUNDLE
     mainglwidget.cpp mainglwidget.h
     mainwindow.cpp mainwindow.h mainwindow.ui
     meld.cpp meld.h
+    illegalmove.h
     player.cpp player.h
     position.cpp position.h
     roundresult.h

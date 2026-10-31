@@ -1,6 +1,7 @@
 #ifndef MELD_H
 #define MELD_H
 #include "cardvalue.h"
+#include "illegalmove.h"
 #include "player.h"
 #include <vector>
 #include "card.h"
@@ -35,7 +36,9 @@ class Meld
     const std::vector<Card*>& getCards() const;
     const std::vector<Player>& getOwners() const;
     bool isOwnedBy(const Player& player) const;
-    bool valid() const;
+    IllegalMove validationError() const;
+    bool valid() const { return validationError() == NO_ILLEGAL_MOVE; }
+    IllegalMove addingCardsValidationError(const std::vector<Card*>& cards) const;
     bool canAddCards(const std::vector<Card*>& cards) const;
     int getPoints() const;
 };

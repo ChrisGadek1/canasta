@@ -38,6 +38,7 @@ A 4-player Canasta card game implemented in C++ using Qt5 and OpenGL for renderi
 - [`CardValue`](cardvalue.h): `INVALID_CARD_VALUE = -1`, `TWO` ... `KING`, `ACE`, `JOKER`
 - [`CardSuit`](cardsuit.h): `SPADES`, `HEARTS`, `DIAMONDS`, `CLUBS`
 - [`CardsDeckType`](cardsdecktype.h): `PLAYERS_OWNED`, `HIDDEN`, `EXPOSED`
+- [`IllegalMove`](illegalmove.h): `NO_ILLEGAL_MOVE` and the reasons why a human move is refused (meld validation errors, not drawn yet, pile rules, ...)
 
 ### Game State (`Game`)
 
@@ -84,6 +85,8 @@ Partner of player `n` is `(n + 2) % 4`.
 
 All actions only work when `currentPlayerIndex == 0`. Selection state spans all pages (checks iterate the full hand, not only visible cards).
 
+**Illegal moves** - a refused click on the hidden deck, the exposed deck, the "Melduj" button or a meld (with selected cards on an opponents' meld) opens `MainGLWidget::showIllegalMoveDialog()` ("Niedozwolony ruch", Polish text from `getIllegalMoveMessage()`). The reason comes from `Game::getHumanPlayerDrawIllegalMove()`, `getHumanPlayerMeldIllegalMove()`, `getHumanPlayerAddCardsToMeldIllegalMove()` and `getHumanPlayerExposedDeckClickIllegalMove()` (before the draw a pile click is a take attempt, unless exactly one card not matching the top card is selected; after the draw it is a discard attempt, unless ≥ 2 selected cards match the top card). "Not drawn yet" is reported only when the selected cards are otherwise valid
+
 ## Meld Rules
 
 ### Validation ([`Meld::valid()`](meld.cpp:30))
@@ -94,7 +97,7 @@ All actions only work when `currentPlayerIndex == 0`. Selection state spans all 
 5. **No black 3s** (`hasNoBlackThrees`) - black 3s can never be melded; a player has to discard them to empty the hand
 6. **At most `Meld::MAX_SIZE` (8) cards** (`hasAtMostMaxSizeCards`, checked first, also for magic cards melds); `Meld::isFull()` / `Game::hasFullMeldWithValue()` - a full meld takes no more cards, so taking the exposed deck onto it is impossible too
 
-Each failing check prints a `printf` debug message.
+Each failing check prints a `printf` debug message. `Meld::validationError()` / `addingCardsValidationError()` return the failing rule as an `IllegalMove`.
 
 ### Additional rules
 - **Magic cards**: `TWO` and `JOKER` (`Meld::isMagicCard`)
@@ -210,6 +213,7 @@ canasta/
 ├── cardvalue.h          # Card value enum
 ├── cardsuit.h           # Card suit enum
 ├── cardsdecktype.h      # Deck type enum
+├── illegalmove.h        # Reasons of refused human moves
 ├── resources.qrc        # Qt resource file
 └── images/
     ├── background.png   # Table background

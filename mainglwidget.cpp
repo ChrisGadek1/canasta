@@ -378,6 +378,83 @@ void MainGLWidget::showNoCanastaDialog() {
     noCanastaDialog.exec();
 }
 
+void MainGLWidget::showIllegalMoveDialog(IllegalMove illegalMove) {
+    if (illegalMove == NO_ILLEGAL_MOVE) return;
+    QMessageBox illegalMoveDialog(this);
+    illegalMoveDialog.setWindowTitle(tr("Niedozwolony ruch"));
+    illegalMoveDialog.setFont(QFont("Arial", 18));
+    illegalMoveDialog.setText(getIllegalMoveMessage(illegalMove));
+    illegalMoveDialog.addButton(tr("Ok"), QMessageBox::AcceptRole);
+    illegalMoveDialog.exec();
+}
+
+QString MainGLWidget::getIllegalMoveMessage(IllegalMove illegalMove) {
+    switch (illegalMove) {
+    case NOT_PLAYERS_TURN:
+        return tr("Teraz jest ruch gracza %1. Poczekaj na swoją kolej.").arg(QString::fromStdString(this->game.getCurrentPlayer()->getName()));
+    case ALREADY_DRAWN:
+        return tr("W tej turze karta została już dobrana. Możesz dobrać tylko raz na turę (wzięcie stosu też liczy się jako dobranie).");
+    case NOT_DRAWN_YET:
+        return tr("Najpierw dobierz kartę z talii lub weź stos.");
+    case NO_CARDS_CHOSEN_TO_MELD:
+        return tr("Zaznacz karty, które chcesz wyłożyć.");
+    case TOO_FEW_CARDS:
+        return tr("Ogon musi mieć co najmniej 3 karty.");
+    case TOO_FEW_NATURAL_CARDS:
+        return tr("Ogon musi zawierać co najmniej 2 naturalne karty (nie dwójki i nie jokery).");
+    case DIFFERENT_VALUES:
+        return tr("Wszystkie naturalne karty w ogonie muszą mieć tę samą wartość.");
+    case TOO_MANY_MAGIC_CARDS:
+        return tr("W ogonie nie może być więcej dzikich kart (dwójek i jokerów) niż kart naturalnych.");
+    case BLACK_THREE:
+        return tr("Czarnych trójek nie można wykładać. Można się ich pozbyć tylko odrzucając je na stos.");
+    case MAGIC_CARDS_MELD_NOT_CANASTA:
+        return tr("Ogon z samych dwójek i jokerów można wyłożyć tylko jako pełną kanastę (co najmniej %1 kart).").arg(Meld::CANASTA_SIZE);
+    case MELD_TOO_LARGE:
+        return tr("Ogon może mieć najwyżej %1 kart.").arg(Meld::MAX_SIZE);
+    case MELD_VALUE_ALREADY_EXISTS:
+        return tr("Twoja drużyna ma już ogon z tą wartością. Dołóż karty do istniejącego ogona, klikając go.");
+    case NO_CARDS_CHOSEN_TO_ADD:
+        return tr("Zaznacz karty, które chcesz dołożyć do ogona.");
+    case CARDS_NOT_MATCHING_MELD:
+        return tr("Do ogona można dołożyć tylko karty tej samej wartości lub dzikie karty.");
+    case TOO_MANY_MAGIC_CARDS_AFTER_ADDING:
+        return tr("Po dołożeniu w ogonie byłoby więcej dzikich kart niż naturalnych.");
+    case MELD_FULL:
+        return tr("Ogon ma już %1 kart. Nie można do niego nic dołożyć.").arg(Meld::MAX_SIZE);
+    case OPPONENTS_MELD:
+        return tr("Nie można dokładać kart do ogonów przeciwników.");
+    case EXPOSED_DECK_ALREADY_DRAWN:
+        return tr("W tej turze karta została już dobrana. Stos można wziąć tylko zamiast dobierania z talii.");
+    case EXPOSED_DECK_MAGIC_TOP_CARD:
+        return tr("Nie można wziąć stosu, gdy na wierzchu leży dzika karta.");
+    case EXPOSED_DECK_BLACK_THREE_TOP_CARD:
+        return tr("Czarna trójka na wierzchu blokuje stos. Nie można go wziąć w tej turze.");
+    case EXPOSED_DECK_NOTHING_CHOSEN:
+        return tr("Jeżeli chcesz wziąć cały stos, zaznacz dwie karty, które utworzą ogon z wierzchnią kartą stosu. Jeżeli chcesz odrzucić kartę, zaznacz jedną wybraną kartę.");
+    case EXPOSED_DECK_FROZEN_NOTHING_CHOSEN:
+        return tr("Stos jest zamrożony (leży w nim dzika karta lub czerwona trójka). Jeżeli chcesz go wziąć, zaznacz dwie naturalne karty o wartości wierzchniej karty. Jeżeli chcesz odrzucić kartę, zaznacz jedną wybraną kartę.");
+    case EXPOSED_DECK_TOO_FEW_NATURAL_CARDS:
+        return tr("Aby wziąć stos, potrzebujesz co najmniej 2 naturalnych kart o wartości wierzchniej karty.");
+    case EXPOSED_DECK_INVALID_MELD:
+        return tr("Zaznaczone karty razem z wierzchnią kartą stosu nie tworzą poprawnego ogona.");
+    case EXPOSED_DECK_INSUFFICIENT_INITIAL_MELD:
+        return tr("Ogon utworzony z wierzchnią kartą stosu ma %1 pkt. Do wyłożenia się potrzeba co najmniej %2 pkt.").arg(this->game.getHumanPlayerExposedDeckMeldPoints()).arg(this->game.getHumanTeamInitialMeldMinimumPoints());
+    case EXPOSED_DECK_MELD_FULL:
+        return tr("Ogon tej wartości ma już %1 kart. Nie można wziąć stosu.").arg(Meld::MAX_SIZE);
+    case EXPOSED_DECK_EMPTY:
+        return tr("Stos jest pusty. Dobierz kartę z talii.");
+    case DISCARD_NOT_DRAWN_YET:
+        return tr("Przed odrzuceniem karty musisz dobrać kartę z talii lub wziąć stos.");
+    case DISCARD_NOTHING_CHOSEN:
+        return tr("Zaznacz kartę, którą chcesz odrzucić.");
+    case DISCARD_TOO_MANY_CHOSEN:
+        return tr("Odrzucić można tylko jedną kartę. Zaznacz dokładnie jedną.");
+    default:
+        return QString();
+    }
+}
+
 void MainGLWidget::clickOnMeldButton() {
     this->game.meldHumanPlayerChosenCards();
     update();
@@ -411,15 +488,19 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
         update();
     }
     Position buttonPos = Position::toPx(MELDING_BUTTON_LEFT, MELDING_BUTTON_DOWN, MELDING_BUTTON_TOP, MELDING_BUTTON_RIGHT, width(), height());
-    if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x && this->game.canHumanPlayerMeld()) {
-        setMeldButtonColor(92.0f, 87.0f, 87.0f);
-        update();
-        if (this->game.wouldMeldingChosenCardsFinishWithInsufficientInitialMelds()) {
-            showInsufficientInitialMeldsDialog();
-        } else if (this->game.wouldMeldFinishWithoutCanasta()) {
-            showNoCanastaDialog();
+    if(buttonPos.down > y && buttonPos.top < y && buttonPos.left < x && buttonPos.right > x) {
+        if (this->game.canHumanPlayerMeld()) {
+            setMeldButtonColor(92.0f, 87.0f, 87.0f);
+            update();
+            if (this->game.wouldMeldingChosenCardsFinishWithInsufficientInitialMelds()) {
+                showInsufficientInitialMeldsDialog();
+            } else if (this->game.wouldMeldFinishWithoutCanasta()) {
+                showNoCanastaDialog();
+            } else {
+                clickOnMeldButton();
+            }
         } else {
-            clickOnMeldButton();
+            showIllegalMoveDialog(this->game.getHumanPlayerMeldIllegalMove());
         }
     }
     if (mouseOverPointsButton(x, y)) {
@@ -428,9 +509,14 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
         clickOnPointsButton();
     }
     if (this->game.mouseOverHiddenDeck(width(), height(), x, y)) {
-        this->game.handleClickOnHiddenDeck();
+        if (this->game.canHumanPlayerDraw()) {
+            this->game.handleClickOnHiddenDeck();
+        } else {
+            showIllegalMoveDialog(this->game.getHumanPlayerDrawIllegalMove());
+        }
     }
-    if (this->game.mouseOverExposedDeck(width(), height(), x, y) && (this->game.canHumanPlayerDiscard() || this->game.canHumanPlayerTakeExposedDeck())) {
+    bool mouseOverExposedDeck = this->game.mouseOverExposedDeck(width(), height(), x, y);
+    if (mouseOverExposedDeck && (this->game.canHumanPlayerDiscard() || this->game.canHumanPlayerTakeExposedDeck())) {
         if (this->game.canHumanPlayerDiscard() && this->game.hasHumanTeamInsufficientInitialMelds()) {
             showInsufficientInitialMeldsDialog();
         } else if (this->game.wouldClickOnExposedDeckFinishWithoutCanasta()) {
@@ -439,6 +525,8 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
             this->game.handleClickOnExposedDeck();
         }
         update();
+    } else if (mouseOverExposedDeck) {
+        showIllegalMoveDialog(this->game.getHumanPlayerExposedDeckClickIllegalMove());
     }
     // Handle left arrow button click (only if visible)
     if (shouldShowLeftArrow() && mouseOverLeftArrow(x, y)) {
@@ -460,8 +548,10 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
     // Handle click on existing meld to add cards
     {
         int meldIndex = -1;
-        if (!showOpponentsMelds && this->game.mouseOverMeld(width(), height(), x, y, meldIndex) && this->game.canAddCardsToMeld(meldIndex)) {
-            if (this->game.wouldMeldingChosenCardsFinishWithInsufficientInitialMelds()) {
+        if (!showOpponentsMelds && this->game.mouseOverMeld(width(), height(), x, y, meldIndex)) {
+            if (!this->game.canAddCardsToMeld(meldIndex)) {
+                showIllegalMoveDialog(this->game.getHumanPlayerAddCardsToMeldIllegalMove(meldIndex));
+            } else if (this->game.wouldMeldingChosenCardsFinishWithInsufficientInitialMelds()) {
                 showInsufficientInitialMeldsDialog();
             } else if (this->game.wouldAddingCardsToMeldFinishWithoutCanasta(meldIndex)) {
                 showNoCanastaDialog();
@@ -469,6 +559,8 @@ void MainGLWidget::mousePressEvent(QMouseEvent * event) {
                 this->game.addCardsToMeld(meldIndex);
             }
             update();
+        } else if (showOpponentsMelds && this->game.getCurrentPlayerIndex() == 0 && this->game.hasHumanPlayerChosenCards() && this->game.mouseOverOpponentsMeld(width(), height(), x, y)) {
+            showIllegalMoveDialog(OPPONENTS_MELD);
         }
     }
     startAnimation();

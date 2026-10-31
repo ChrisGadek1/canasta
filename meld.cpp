@@ -34,20 +34,21 @@ CardValue Meld::baseValue(const std::vector<Card*>& cards) {
     return JOKER;
 }
 
-bool Meld::valid() const {
-    if (!hasAtMostMaxSizeCards()) return false;
+IllegalMove Meld::validationError() const {
+    if (!hasAtMostMaxSizeCards()) return MELD_TOO_LARGE;
     if (!this->cards.empty() && countMagicCards() == static_cast<int>(this->cards.size())) {
         if (static_cast<int>(this->cards.size()) < CANASTA_SIZE) {
             printf("cannot meld - magic cards meld must be a complete canasta \n");
-            return false;
+            return MAGIC_CARDS_MELD_NOT_CANASTA;
         }
-        return true;
+        return NO_ILLEGAL_MOVE;
     }
-    return hasNoBlackThrees() &&
-           allNonMagicCardsHaveTheSameValue() &&
-           hasAtLeastTwoNonMagicCards() &&
-           hasAtLeastThreeTotalCards() &&
-           magicCardsNotExceedingNonMagicCards();
+    if (!hasNoBlackThrees()) return BLACK_THREE;
+    if (!allNonMagicCardsHaveTheSameValue()) return DIFFERENT_VALUES;
+    if (!hasAtLeastTwoNonMagicCards()) return TOO_FEW_NATURAL_CARDS;
+    if (!hasAtLeastThreeTotalCards()) return TOO_FEW_CARDS;
+    if (!magicCardsNotExceedingNonMagicCards()) return TOO_MANY_MAGIC_CARDS;
+    return NO_ILLEGAL_MOVE;
 }
 
 bool Meld::isMagicCard(CardValue cardValue) const {
@@ -128,7 +129,7 @@ bool Meld::hasAtMostMaxSizeCards() const {
     return true;
 }
 
-bool Meld::canAddCards(const std::vector<Card*>& cards) const {
+IllegalMove Meld::addingCardsValidationError(const std::vector<Card*>& cards) const {
     Meld tempMeld(this->value, this->owners);
     for (auto& card : this->cards) {
         tempMeld.addCard(card);
@@ -136,11 +137,15 @@ bool Meld::canAddCards(const std::vector<Card*>& cards) const {
     for (auto& card : cards) {
         tempMeld.addCard(card);
     }
-    if (!tempMeld.valid()) {
+    IllegalMove error = tempMeld.validationError();
+    if (error != NO_ILLEGAL_MOVE) {
         printf("cannot add cards to meld - resulting meld would be invalid\n");
-        return false;
     }
-    return true;
+    return error;
+}
+
+bool Meld::canAddCards(const std::vector<Card*>& cards) const {
+    return addingCardsValidationError(cards) == NO_ILLEGAL_MOVE;
 }
 
 int Meld::getPoints() const {

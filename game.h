@@ -3,6 +3,7 @@
 
 #include "cardmemory.h"
 #include "cardsdeck.h"
+#include "illegalmove.h"
 #include "player.h"
 #include <array>
 #include <vector>
@@ -97,6 +98,7 @@ public:
     bool mouseOverHiddenDeck(int vw, int vh, int x, int y);
     bool mouseOverExposedDeck(int vw, int vh, int x, int y);
     bool hasExactlyOneCardSelected();
+    bool hasHumanPlayerChosenCards() { return !getHumanPlayerChosenCards().empty(); }
     bool canHumanPlayerMeld();
     void meldHumanPlayerChosenCards();
     bool canHumanPlayerDiscard();
@@ -112,6 +114,12 @@ public:
     bool mouseOverMeld(int vw, int vh, int x, int y, int& meldIndex) const;
     bool canAddCardsToMeld(int meldIndex);
     void addCardsToMeld(int meldIndex);
+    bool mouseOverOpponentsMeld(int vw, int vh, int x, int y) const;
+    IllegalMove getHumanPlayerDrawIllegalMove() const;
+    IllegalMove getHumanPlayerMeldIllegalMove();
+    IllegalMove getHumanPlayerAddCardsToMeldIllegalMove(int meldIndex);
+    IllegalMove getHumanPlayerExposedDeckClickIllegalMove();
+    int getHumanPlayerExposedDeckMeldPoints();
 
     Player* getCurrentPlayer() { return &players[currentPlayerIndex]; }
     int getCurrentPlayerIndex() { return currentPlayerIndex; }

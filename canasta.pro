@@ -43,6 +43,7 @@ HEADERS  += mainwindow.h \
     cardsdecktype.h \
     position.h \
     meld.h \
+    illegalmove.h \
     roundresult.h \
     teamroundscore.h
 
